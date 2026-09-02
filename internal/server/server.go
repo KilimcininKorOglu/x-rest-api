@@ -366,6 +366,14 @@ func (s *Server) Routes(admin http.Handler) http.Handler {
 			v.Method(rt.Method, strings.TrimPrefix(rt.Path, "/v1"), rt.Handler)
 		}
 	})
+
+	// /2 mirrors the official X API v2 read surface behind the same Bearer auth
+	// and request logging, rendering the {data, includes, meta, errors} envelope.
+	r.Route("/2", func(v chi.Router) {
+		v.Use(s.requestLog)
+		v.Use(s.apiKeyAuth)
+		s.mountV2(v)
+	})
 	return r
 }
 

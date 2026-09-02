@@ -208,29 +208,54 @@ func banReason(up *xapi.UpstreamError) string {
 	return fmt.Sprintf("x.com code %d: %s (http %d)", up.Code, up.Msg, up.Status)
 }
 
-// handleUpstream classifies an upstream error and either handles it terminally
-// (writing the response) or returns retry=true to rotate to another account. A
-// ban disables the account; a rate limit cools it for the op; stale features
-// trigger a queryId refresh; a transient error retries.
-func (s *Server) handleUpstream(w http.ResponseWriter, r *http.Request, up *xapi.UpstreamError, accountID int64, op string, pinned bool, rl *xapi.RateLimit, pub func() (any, error)) bool {
+// upstreamOutcome is the terminal disposition of an upstream error after its pool
+// and account side effects have been applied.
+type upstreamOutcome int
+
+const (
+	outcomeRetry     upstreamOutcome = iota // rotate to another account
+	outcomeFail                             // write the upstream error
+	outcomeHTMLBlock                        // write a 502 anti-bot/HTML block
+)
+
+// applyUpstreamEffect performs the pool/account side effects for an upstream error
+// (disable a banned account, cool a rate-limited op, refresh stale features) and
+// returns how the caller should finish: retry to rotate, fail to write the error,
+// or a dedicated HTML-block response. It writes no response, so read layers with
+// different envelopes (v1, v2) share the effects but render their own bodies.
+func (s *Server) applyUpstreamEffect(up *xapi.UpstreamError, accountID int64, op string, pinned bool, rl *xapi.RateLimit) upstreamOutcome {
 	switch classifyUpstream(up, rl) {
 	case kindBan:
 		_ = s.store.DisableAccount(accountID, banReason(up))
 		if !pinned {
-			return true
+			return outcomeRetry
 		}
 	case kindRateLimit:
 		if !pinned {
 			s.pool.Fail(accountID, lockOp(op, up), rlStatus(up))
-			return true
+			return outcomeRetry
 		}
 	case kindFeaturesStale:
 		s.triggerRefresh()
 	case kindTransient:
 		if !pinned {
-			return true
+			return outcomeRetry
 		}
 	case kindHTMLBlock:
+		return outcomeHTMLBlock
+	}
+	return outcomeFail
+}
+
+// handleUpstream classifies an upstream error and either handles it terminally
+// (writing the response) or returns retry=true to rotate to another account. A
+// ban disables the account; a rate limit cools it for the op; stale features
+// trigger a queryId refresh; a transient error retries.
+func (s *Server) handleUpstream(w http.ResponseWriter, r *http.Request, up *xapi.UpstreamError, accountID int64, op string, pinned bool, rl *xapi.RateLimit, pub func() (any, error)) bool {
+	switch s.applyUpstreamEffect(up, accountID, op, pinned, rl) {
+	case outcomeRetry:
+		return true
+	case outcomeHTMLBlock:
 		recordErr(r, up)
 		writeError(w, http.StatusBadGateway, "upstream returned an anti-bot/HTML block; try again later")
 		return false
