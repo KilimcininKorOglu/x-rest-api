@@ -8,6 +8,7 @@ import (
 	"mime/multipart"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	http "github.com/bogdanfinn/fhttp"
@@ -60,15 +61,33 @@ func mediaIDFrom(out map[string]any) (string, error) {
 
 // mediaInit starts a chunked upload and returns the media_id_string.
 func (c *XClient) mediaInit(size int, mediaType string) (string, error) {
-	out, err := c.callForm("MediaInit", mediaUploadURL, url.Values{
+	form := url.Values{
 		"command":     {"INIT"},
 		"media_type":  {mediaType},
 		"total_bytes": {strconv.Itoa(size)},
-	})
+	}
+	if cat := mediaCategory(mediaType); cat != "" {
+		form.Set("media_category", cat)
+	}
+	out, err := c.callForm("MediaInit", mediaUploadURL, form)
 	if err != nil {
 		return "", err
 	}
 	return mediaIDFrom(out)
+}
+
+// mediaCategory maps a MIME type to x.com's media_category, which INIT needs so
+// the media can be attached to a tweet.
+func mediaCategory(mimeType string) string {
+	switch {
+	case strings.HasPrefix(mimeType, "image/gif"):
+		return "tweet_gif"
+	case strings.HasPrefix(mimeType, "image/"):
+		return "tweet_image"
+	case strings.HasPrefix(mimeType, "video/"):
+		return "tweet_video"
+	}
+	return ""
 }
 
 // mediaAppend uploads the media in chunks as multipart requests.

@@ -142,8 +142,8 @@ specific account):
 
 | Endpoint | Body | Description |
 |---|---|---|
-| `POST /v1/tweets` | `{"text": "...", "reply_to": "<id>", "media_ids": ["<id>"]}` | post a tweet or reply (text or media_ids) |
-| `POST /v1/notes` | `{"text": "...", "reply_to": "<id>"}` | post a long-form (note) tweet or reply |
+| `POST /v1/tweets` | `{"text": "...", "reply_to": "<id>", "quote_of": "<id>", "media_ids": ["<id>"]}` | post a tweet, reply, or quote |
+| `POST /v1/notes` | `{"text": "...", "reply_to": "<id>"}` | post a long-form (note) tweet or reply (requires X Premium) |
 | `POST /v1/media` | multipart field `file` | upload media, returns `media_id` for `media_ids` |
 | `DELETE /v1/tweets/{id}` | none | delete a tweet |
 | `POST /v1/tweets/{id}/like` | none | like a tweet |

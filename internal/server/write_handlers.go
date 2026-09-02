@@ -18,6 +18,7 @@ const maxMediaBytes = 512 << 20
 type createTweetBody struct {
 	Text     string   `json:"text"`
 	ReplyTo  string   `json:"reply_to"`
+	QuoteOf  string   `json:"quote_of"`  // tweet id to quote
 	MediaIDs []string `json:"media_ids"` // ids from POST /v1/media
 }
 
@@ -71,8 +72,8 @@ func (s *Server) createTweet(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
-	if body.Text == "" && len(body.MediaIDs) == 0 {
-		writeError(w, http.StatusBadRequest, "provide text or media_ids")
+	if body.Text == "" && len(body.MediaIDs) == 0 && body.QuoteOf == "" {
+		writeError(w, http.StatusBadRequest, "provide text, media_ids, or quote_of")
 		return
 	}
 	acct, ok := s.writeGuard(w, r, "CreateTweet")
@@ -80,7 +81,7 @@ func (s *Server) createTweet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	cli := s.clientFor(acct)
-	tw, err := cli.CreateTweet(body.Text, body.ReplyTo, body.MediaIDs)
+	tw, err := cli.CreateTweet(body.Text, body.ReplyTo, body.MediaIDs, body.QuoteOf)
 	s.pool.Observe(acct.ID, "CreateTweet", cli.RateLimit())
 	if err != nil {
 		s.failWrite(w, r, acct.ID, "CreateTweet", err)

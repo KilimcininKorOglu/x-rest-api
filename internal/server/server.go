@@ -215,8 +215,8 @@ func (s *Server) v1Routes() []apiRoute {
 		}), s.home),
 
 		writeRoute(route("POST", "/v1/media", "Upload media (multipart field 'file'); returns media_id", map[string]any{}, nil), nil, 201, s.uploadMedia),
-		writeRoute(route("POST", "/v1/tweets", "Post a tweet or reply (optional media_ids)", xapi.Tweet{}, nil), createTweetBody{}, 201, s.createTweet),
-		writeRoute(route("POST", "/v1/notes", "Post a long-form (note) tweet or reply", xapi.Tweet{}, nil), createTweetBody{}, 201, s.createNote),
+		writeRoute(route("POST", "/v1/tweets", "Post a tweet, reply, or quote (optional media_ids)", xapi.Tweet{}, nil), createTweetBody{}, 201, s.createTweet),
+		writeRoute(route("POST", "/v1/notes", "Post a long-form (note) tweet or reply (requires X Premium)", xapi.Tweet{}, nil), createTweetBody{}, 201, s.createNote),
 		writeRoute(route("DELETE", "/v1/tweets/{id}", "Delete a tweet", writeOK, nil), nil, 200, s.deleteTweet),
 		writeRoute(route("POST", "/v1/tweets/{id}/like", "Like a tweet", writeOK, nil), nil, 200, s.likeTweet),
 		writeRoute(route("POST", "/v1/tweets/{id}/unlike", "Remove a like", writeOK, nil), nil, 200, s.unlikeTweet),

@@ -806,7 +806,7 @@
 		"features": {}
 	},
 	"CreateRetweet": {
-		"queryId": "mbRO74GrOvSfRcJnlMapnQ",
+		"queryId": "ojPdsZsimiJrUGLR1sjUtA",
 		"method": "POST",
 		"variables": {
 			"tweet_id": "",

@@ -1,13 +1,17 @@
 package xapi
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+)
 
 // Write mutations. These are gated behind ENABLE_WRITES at the server layer and
 // perform real account actions, so they are kept separate from the read surfaces.
 
-// CreateTweet posts a tweet. When replyToID is set, it posts a reply; when
-// mediaIDs are given (from UploadMedia), it attaches them.
-func (c *XClient) CreateTweet(text, replyToID string, mediaIDs []string) (*Tweet, error) {
+// CreateTweet posts a tweet. When replyToID is set it posts a reply; when quoteID
+// is set it quotes that tweet; when mediaIDs are given (from UploadMedia) it
+// attaches them.
+func (c *XClient) CreateTweet(text, replyToID string, mediaIDs []string, quoteID string) (*Tweet, error) {
 	vars := map[string]any{"tweet_text": text}
 	if replyToID != "" {
 		vars["reply"] = map[string]any{
@@ -15,10 +19,20 @@ func (c *XClient) CreateTweet(text, replyToID string, mediaIDs []string) (*Tweet
 			"exclude_reply_user_ids": []string{},
 		}
 	}
+	if quoteID != "" {
+		vars["attachment_url"] = "https://x.com/i/status/" + quoteID
+	}
 	if len(mediaIDs) > 0 {
 		ents := make([]map[string]any, 0, len(mediaIDs))
 		for _, id := range mediaIDs {
-			ents = append(ents, map[string]any{"media_id": id, "tagged_users": []string{}})
+			ent := map[string]any{"tagged_users": []string{}}
+			// x.com expects media_id as an int64, not a string.
+			if n, err := strconv.ParseInt(id, 10, 64); err == nil {
+				ent["media_id"] = n
+			} else {
+				ent["media_id"] = id
+			}
+			ents = append(ents, ent)
 		}
 		vars["media"] = map[string]any{"media_entities": ents, "possibly_sensitive": false}
 	}
@@ -29,9 +43,21 @@ func (c *XClient) CreateTweet(text, replyToID string, mediaIDs []string) (*Tweet
 	res := asMap(dig(payload, "data", "create_tweet", "tweet_results", "result"))
 	tw := parseTweet(res)
 	if tw == nil {
-		return nil, fmt.Errorf("CreateTweet: no tweet in response")
+		return nil, fmt.Errorf("CreateTweet: %s", responseErr(payload))
 	}
 	return tw, nil
+}
+
+// responseErr renders a GraphQL 200-with-errors payload's first error message, or
+// a generic note when there is none, so a mutation that returns no result still
+// surfaces why.
+func responseErr(payload map[string]any) string {
+	for _, e := range asSlice(payload["errors"]) {
+		if m := asString(asMap(e)["message"]); m != "" {
+			return m
+		}
+	}
+	return "no result in response"
 }
 
 // FavoriteTweet likes a tweet by id.
