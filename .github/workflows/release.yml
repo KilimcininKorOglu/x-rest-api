@@ -17,9 +17,18 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: "1.26"
+      - name: Extract release notes from CHANGELOG
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          awk -v v="$VERSION" '$0 ~ "^## \\["v"\\]"{f=1;next} f&&/^## \[/{exit} f{print}' CHANGELOG.md > /tmp/relnotes.md
+          if [ ! -s /tmp/relnotes.md ]; then
+            echo "No CHANGELOG.md section for $VERSION" >&2
+            exit 1
+          fi
+          cat /tmp/relnotes.md
       - uses: goreleaser/goreleaser-action@v6
         with:
           version: "~> v2"
-          args: release --clean
+          args: release --clean --release-notes=/tmp/relnotes.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
