@@ -30,9 +30,9 @@ Then open `http://localhost:8430/admin`:
 
 ## Environment
 
-| Key | Default | Purpose |
-|---|---|---|
-| `PORT` | `8430` | listen port (binds `0.0.0.0`) |
+| Key       | Default              | Purpose                                                 |
+|-----------|----------------------|---------------------------------------------------------|
+| `PORT`    | `8430`               | listen port (binds `0.0.0.0`)                           |
 | `DB_PATH` | `data/x-rest-api.db` | SQLite file (holds plaintext cookies/keys; kept `0600`) |
 
 ## Account selection
@@ -62,61 +62,61 @@ All reads are `GET`. `count` defaults to 40 (max 200). Success is `{"data": ...}
 failure is `{"error": {"message": ...}}`. Every `/v1` route needs the Bearer key;
 `/health` is open.
 
-| Endpoint | Description |
-|---|---|
-| `/health` | liveness (no auth) |
-| `/openapi.json` | OpenAPI 3.0.3 schema, auto-generated from the route table (no auth) |
-| `/docs` | Swagger UI over `/openapi.json`, vendored (no auth) |
-| `/v1/users/{handle}` | profile (numeric `{handle}` uses UserByRestId) |
-| `/v1/users/{handle}/tweets` | a user's posts |
-| `/v1/users/{handle}/replies` | posts + replies |
-| `/v1/users/{handle}/media` | media posts |
-| `/v1/users/{handle}/highlights` | highlights |
-| `/v1/users/{handle}/likes` | a user's liked tweets |
-| `/v1/users/{handle}/followers` | followers |
-| `/v1/users/{handle}/following` | following |
-| `/v1/users/{handle}/verified-followers` | verified (blue) followers |
-| `/v1/users/{handle}/subscriptions` | creators the user subscribes to |
-| `/v1/users/{handle}/about` | account origin, username history, identity verification |
-| `/v1/users/{handle}/rss` | a user's posts as an RSS 2.0 feed |
-| `/v1/users/by?ids=` | batch profile lookup (comma-separated numeric ids, max 100) |
-| `/v1/tweets/{id}` | focal tweet + reply thread |
-| `/v1/tweets/{id}/result` | single tweet, no thread |
-| `/v1/tweets/{id}/thread` | tweets in the conversation (self-thread); `?sort=relevance\|recency\|likes` |
-| `/v1/tweets/{id}/replies` | direct replies; `?sort=relevance\|recency\|likes` |
-| `/v1/tweets/{id}/history` | edit history (raw GQL) |
-| `/v1/tweets/{id}/retweeters` | who reposted |
-| `/v1/tweets/{id}/likers` | who liked |
-| `/v1/tweets/by?ids=` | batch tweet lookup (comma-separated numeric ids, max 100) |
-| `/v1/search?q=&product=Latest` | keyword/filter search (tweets) |
-| `/v1/search/people?q=` | keyword/filter search (users) |
-| `/v1/search/rss?q=` | search results as an RSS 2.0 feed |
-| `/v1/lists/{id}` | list metadata (parsed; `?raw=true` for GQL) |
-| `/v1/lists/by-slug?owner=&slug=` | list metadata by owner handle + slug |
-| `/v1/lists/{id}/tweets` | list timeline |
-| `/v1/lists/{id}/rss` | list timeline as an RSS 2.0 feed |
-| `/v1/lists/{id}/members` | list members |
-| `/v1/spaces/{id}` | Space info by id (raw GQL) |
-| `/v1/spaces/{id}/stream` | a Space's live stream status (playback source, share url) |
-| `/v1/notifications` | notifications timeline (raw GQL, account-scoped) |
-| `/v1/bookmarks/folders` | bookmark folders (raw GQL, account-scoped) |
-| `/v1/bookmarks/folders/{id}` | tweets in a bookmark folder (account-scoped) |
-| `/v1/communities/{id}` | community info (raw GQL) |
-| `/v1/communities/{id}/tweets` | community timeline |
-| `/v1/communities/{id}/members` | community members |
-| `/v1/communities/{id}/moderators` | community moderators |
-| `/v1/trends?category=trending` | trends (raw GQL); `trending\|news\|sport\|entertainment` |
-| `/v1/bookmarks` | bookmarks (account-scoped) |
-| `/v1/home` | home feed; `?chronological=true` for the Following (latest) feed (account-scoped) |
-| `/v1/users/{handle}/affiliates` | a user's business-profile affiliates |
-| `/v1/suggestions?creator_only=` | who-to-follow recommendations (account-scoped) |
-| `/v1/lists` | your own lists (account-scoped) |
-| `/v1/analytics?from_time=&to_time=&metrics=` | account analytics overview (raw, account-scoped) |
-| `/v1/jobs/search?keyword=&location=` | search X Jobs |
-| `/v1/jobs/{id}` | job details |
-| `/v1/jobs/locations?query=` | job location suggestions |
-| `/v1/dm/inbox` | direct message inbox (account-scoped) |
-| `/v1/dm/conversations/{id}` | a DM conversation (account-scoped) |
+| Endpoint                                     | Description                                                                       |
+|----------------------------------------------|-----------------------------------------------------------------------------------|
+| `/health`                                    | liveness (no auth)                                                                |
+| `/openapi.json`                              | OpenAPI 3.0.3 schema, auto-generated from the route table (no auth)               |
+| `/docs`                                      | Swagger UI over `/openapi.json`, vendored (no auth)                               |
+| `/v1/users/{handle}`                         | profile (numeric `{handle}` uses UserByRestId)                                    |
+| `/v1/users/{handle}/tweets`                  | a user's posts                                                                    |
+| `/v1/users/{handle}/replies`                 | posts + replies                                                                   |
+| `/v1/users/{handle}/media`                   | media posts                                                                       |
+| `/v1/users/{handle}/highlights`              | highlights                                                                        |
+| `/v1/users/{handle}/likes`                   | a user's liked tweets                                                             |
+| `/v1/users/{handle}/followers`               | followers                                                                         |
+| `/v1/users/{handle}/following`               | following                                                                         |
+| `/v1/users/{handle}/verified-followers`      | verified (blue) followers                                                         |
+| `/v1/users/{handle}/subscriptions`           | creators the user subscribes to                                                   |
+| `/v1/users/{handle}/about`                   | account origin, username history, identity verification                           |
+| `/v1/users/{handle}/rss`                     | a user's posts as an RSS 2.0 feed                                                 |
+| `/v1/users/by?ids=`                          | batch profile lookup (comma-separated numeric ids, max 100)                       |
+| `/v1/tweets/{id}`                            | focal tweet + reply thread                                                        |
+| `/v1/tweets/{id}/result`                     | single tweet, no thread                                                           |
+| `/v1/tweets/{id}/thread`                     | tweets in the conversation (self-thread); `?sort=relevance\|recency\|likes`       |
+| `/v1/tweets/{id}/replies`                    | direct replies; `?sort=relevance\|recency\|likes`                                 |
+| `/v1/tweets/{id}/history`                    | edit history (raw GQL)                                                            |
+| `/v1/tweets/{id}/retweeters`                 | who reposted                                                                      |
+| `/v1/tweets/{id}/likers`                     | who liked                                                                         |
+| `/v1/tweets/by?ids=`                         | batch tweet lookup (comma-separated numeric ids, max 100)                         |
+| `/v1/search?q=&product=Latest`               | keyword/filter search (tweets)                                                    |
+| `/v1/search/people?q=`                       | keyword/filter search (users)                                                     |
+| `/v1/search/rss?q=`                          | search results as an RSS 2.0 feed                                                 |
+| `/v1/lists/{id}`                             | list metadata (parsed; `?raw=true` for GQL)                                       |
+| `/v1/lists/by-slug?owner=&slug=`             | list metadata by owner handle + slug                                              |
+| `/v1/lists/{id}/tweets`                      | list timeline                                                                     |
+| `/v1/lists/{id}/rss`                         | list timeline as an RSS 2.0 feed                                                  |
+| `/v1/lists/{id}/members`                     | list members                                                                      |
+| `/v1/spaces/{id}`                            | Space info by id (raw GQL)                                                        |
+| `/v1/spaces/{id}/stream`                     | a Space's live stream status (playback source, share url)                         |
+| `/v1/notifications`                          | notifications timeline (raw GQL, account-scoped)                                  |
+| `/v1/bookmarks/folders`                      | bookmark folders (raw GQL, account-scoped)                                        |
+| `/v1/bookmarks/folders/{id}`                 | tweets in a bookmark folder (account-scoped)                                      |
+| `/v1/communities/{id}`                       | community info (raw GQL)                                                          |
+| `/v1/communities/{id}/tweets`                | community timeline                                                                |
+| `/v1/communities/{id}/members`               | community members                                                                 |
+| `/v1/communities/{id}/moderators`            | community moderators                                                              |
+| `/v1/trends?category=trending`               | trends (raw GQL); `trending\|news\|sport\|entertainment`                          |
+| `/v1/bookmarks`                              | bookmarks (account-scoped)                                                        |
+| `/v1/home`                                   | home feed; `?chronological=true` for the Following (latest) feed (account-scoped) |
+| `/v1/users/{handle}/affiliates`              | a user's business-profile affiliates                                              |
+| `/v1/suggestions?creator_only=`              | who-to-follow recommendations (account-scoped)                                    |
+| `/v1/lists`                                  | your own lists (account-scoped)                                                   |
+| `/v1/analytics?from_time=&to_time=&metrics=` | account analytics overview (raw, account-scoped)                                  |
+| `/v1/jobs/search?keyword=&location=`         | search X Jobs                                                                     |
+| `/v1/jobs/{id}`                              | job details                                                                       |
+| `/v1/jobs/locations?query=`                  | job location suggestions                                                          |
+| `/v1/dm/inbox`                               | direct message inbox (account-scoped)                                             |
+| `/v1/dm/conversations/{id}`                  | a DM conversation (account-scoped)                                                |
 
 Every list read accepts `?cursor=<c>` for manual paging (the response then carries
 a top-level `next_cursor`), `?raw=true` to return the unparsed GraphQL response
@@ -151,41 +151,41 @@ curl -H "Authorization: Bearer $KEY" \
 Writes (need `enable_writes` on in Settings AND a key with write permission AND a
 specific account):
 
-| Endpoint | Body | Description |
-|---|---|---|
-| `POST /v1/tweets` | `{"text": "...", "reply_to": "<id>", "quote_of": "<id>", "media_ids": ["<id>"]}` | post a tweet, reply, or quote |
-| `POST /v1/notes` | `{"text": "...", "reply_to": "<id>"}` | post a long-form (note) tweet or reply (requires X Premium) |
-| `POST /v1/media` | multipart field `file` | upload media, returns `media_id` for `media_ids` |
-| `DELETE /v1/tweets/{id}` | none | delete a tweet |
-| `POST /v1/tweets/{id}/like` | none | like a tweet |
-| `POST /v1/tweets/{id}/unlike` | none | remove a like |
-| `POST /v1/tweets/{id}/retweet` | none | repost a tweet |
-| `DELETE /v1/tweets/{id}/retweet` | none | remove a repost |
-| `POST /v1/tweets/{id}/bookmark` | none | bookmark a tweet |
-| `DELETE /v1/tweets/{id}/bookmark` | none | remove a bookmark |
-| `POST /v1/users/{handle}/follow` | none | follow a user |
-| `DELETE /v1/users/{handle}/follow` | none | unfollow a user |
-| `POST /v1/users/{handle}/mute` | none | mute a user (hides their posts) |
-| `DELETE /v1/users/{handle}/mute` | none | unmute a user |
-| `GET /v1/scheduled` | none | your scheduled (unsent) tweets (account-scoped) |
-| `POST /v1/scheduled` | `{"text": "...", "execute_at": <unix>}` | schedule a tweet for a future time |
-| `DELETE /v1/scheduled/{id}` | none | cancel a scheduled tweet |
-| `POST /v1/grok/chat` | `{"messages": [{"role": "user", "content": "..."}], "conversation_id": "..."}` | chat with Grok; omit `conversation_id` to start a new chat |
-| `POST /v1/lists` | `{"name": "...", "description": "...", "is_private": false}` | create a list, returns `{"id": "..."}` |
-| `PATCH /v1/lists/{id}` | `{"name": "...", "description": "...", "is_private": true}` | update a list (omit fields to leave unchanged) |
-| `DELETE /v1/lists/{id}` | none | delete a list |
-| `POST /v1/lists/{id}/members` | `{"user_id": "<id>"}` | add a member to a list |
-| `DELETE /v1/lists/{id}/members/{userId}` | none | remove a member from a list |
-| `POST /v1/lists/{id}/mute` | none | mute a list |
-| `DELETE /v1/lists/{id}/mute` | none | unmute a list |
-| `POST /v1/dm/conversations/{id}/messages` | `{"text": "..."}` | send a direct message into a conversation |
-| `DELETE /v1/dm/conversations/{id}` | none | delete (leave) a DM conversation |
-| `DELETE /v1/users/{handle}/follower` | none | remove a follower |
-| `POST /v1/account/username` | `{"username": "..."}` | change your @username |
-| `PATCH /v1/account/profile` | `{"name": "...", "url": "...", "location": "...", "description": "..."}` | update your profile (omit fields to leave unchanged) |
-| `PUT /v1/account/profile/image` | `{"image_base64": "..."}` | set your avatar from base64 |
-| `PUT /v1/account/profile/banner` | `{"banner_base64": "..."}` | set your banner from base64 |
-| `POST /v1/account/password` | `{"current_password": "...", "new_password": "..."}` | change your password (may rotate the session; re-capture cookies) |
+| Endpoint                                  | Body                                                                             | Description                                                       |
+|-------------------------------------------|----------------------------------------------------------------------------------|-------------------------------------------------------------------|
+| `POST /v1/tweets`                         | `{"text": "...", "reply_to": "<id>", "quote_of": "<id>", "media_ids": ["<id>"]}` | post a tweet, reply, or quote                                     |
+| `POST /v1/notes`                          | `{"text": "...", "reply_to": "<id>"}`                                            | post a long-form (note) tweet or reply (requires X Premium)       |
+| `POST /v1/media`                          | multipart field `file`                                                           | upload media, returns `media_id` for `media_ids`                  |
+| `DELETE /v1/tweets/{id}`                  | none                                                                             | delete a tweet                                                    |
+| `POST /v1/tweets/{id}/like`               | none                                                                             | like a tweet                                                      |
+| `POST /v1/tweets/{id}/unlike`             | none                                                                             | remove a like                                                     |
+| `POST /v1/tweets/{id}/retweet`            | none                                                                             | repost a tweet                                                    |
+| `DELETE /v1/tweets/{id}/retweet`          | none                                                                             | remove a repost                                                   |
+| `POST /v1/tweets/{id}/bookmark`           | none                                                                             | bookmark a tweet                                                  |
+| `DELETE /v1/tweets/{id}/bookmark`         | none                                                                             | remove a bookmark                                                 |
+| `POST /v1/users/{handle}/follow`          | none                                                                             | follow a user                                                     |
+| `DELETE /v1/users/{handle}/follow`        | none                                                                             | unfollow a user                                                   |
+| `POST /v1/users/{handle}/mute`            | none                                                                             | mute a user (hides their posts)                                   |
+| `DELETE /v1/users/{handle}/mute`          | none                                                                             | unmute a user                                                     |
+| `GET /v1/scheduled`                       | none                                                                             | your scheduled (unsent) tweets (account-scoped)                   |
+| `POST /v1/scheduled`                      | `{"text": "...", "execute_at": <unix>}`                                          | schedule a tweet for a future time                                |
+| `DELETE /v1/scheduled/{id}`               | none                                                                             | cancel a scheduled tweet                                          |
+| `POST /v1/grok/chat`                      | `{"messages": [{"role": "user", "content": "..."}], "conversation_id": "..."}`   | chat with Grok; omit `conversation_id` to start a new chat        |
+| `POST /v1/lists`                          | `{"name": "...", "description": "...", "is_private": false}`                     | create a list, returns `{"id": "..."}`                            |
+| `PATCH /v1/lists/{id}`                    | `{"name": "...", "description": "...", "is_private": true}`                      | update a list (omit fields to leave unchanged)                    |
+| `DELETE /v1/lists/{id}`                   | none                                                                             | delete a list                                                     |
+| `POST /v1/lists/{id}/members`             | `{"user_id": "<id>"}`                                                            | add a member to a list                                            |
+| `DELETE /v1/lists/{id}/members/{userId}`  | none                                                                             | remove a member from a list                                       |
+| `POST /v1/lists/{id}/mute`                | none                                                                             | mute a list                                                       |
+| `DELETE /v1/lists/{id}/mute`              | none                                                                             | unmute a list                                                     |
+| `POST /v1/dm/conversations/{id}/messages` | `{"text": "..."}`                                                                | send a direct message into a conversation                         |
+| `DELETE /v1/dm/conversations/{id}`        | none                                                                             | delete (leave) a DM conversation                                  |
+| `DELETE /v1/users/{handle}/follower`      | none                                                                             | remove a follower                                                 |
+| `POST /v1/account/username`               | `{"username": "..."}`                                                            | change your @username                                             |
+| `PATCH /v1/account/profile`               | `{"name": "...", "url": "...", "location": "...", "description": "..."}`         | update your profile (omit fields to leave unchanged)              |
+| `PUT /v1/account/profile/image`           | `{"image_base64": "..."}`                                                        | set your avatar from base64                                       |
+| `PUT /v1/account/profile/banner`          | `{"banner_base64": "..."}`                                                       | set your banner from base64                                       |
+| `POST /v1/account/password`               | `{"current_password": "...", "new_password": "..."}`                             | change your password (may rotate the session; re-capture cookies) |
 
 ```bash
 curl -H "Authorization: Bearer $KEY" http://localhost:8430/v1/users/naval
