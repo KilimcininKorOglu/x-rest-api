@@ -155,10 +155,10 @@ func (c *XClient) callFormGet(op, apiURL string, params url.Values) (map[string]
 	return c.doForm(op, req)
 }
 
-// doForm sends a prepared REST request and decodes the JSON response, sharing
-// rate-limit and upstream-error handling between the form-POST and query-GET
-// paths. An empty body decodes to a nil map (some deletes return no content).
-func (c *XClient) doForm(op string, req *http.Request) (map[string]any, error) {
+// doRaw sends a prepared REST request and returns the raw response body, sharing
+// rate-limit and upstream-error handling across the form-POST, query-GET, and
+// json-POST paths. Callers decode the body themselves.
+func (c *XClient) doRaw(op string, req *http.Request) ([]byte, error) {
 	resp, err := c.sess.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
@@ -175,6 +175,49 @@ func (c *XClient) doForm(op string, req *http.Request) (map[string]any, error) {
 			Op: op, Status: resp.StatusCode, Body: truncate(body, 300),
 			Code: code, Msg: msg, HTML: isHTMLBlock(resp.Header, body),
 		}
+	}
+	return body, nil
+}
+
+// doForm sends a prepared REST request and decodes the JSON response. An empty
+// body decodes to a nil map (some deletes return no content).
+func (c *XClient) doForm(op string, req *http.Request) (map[string]any, error) {
+	body, err := c.doRaw(op, req)
+	if err != nil {
+		return nil, err
+	}
+	var out map[string]any
+	if len(body) > 0 {
+		if err := json.Unmarshal(body, &out); err != nil {
+			return nil, fmt.Errorf("%s: decode json: %w", op, err)
+		}
+	}
+	return out, nil
+}
+
+// callJSONRaw sends an application/json POST to a legacy REST endpoint and returns
+// the raw body, reusing the session auth headers with content-type overridden in
+// place. Used by endpoints whose payload is a JSON object (DM send) or whose reply
+// is newline-delimited JSON chunks (Grok).
+func (c *XClient) callJSONRaw(op, apiURL string, payload any) ([]byte, error) {
+	b, err := json.Marshal(payload)
+	if err != nil {
+		return nil, fmt.Errorf("%s: marshal payload: %w", op, err)
+	}
+	req, err := http.NewRequest(http.MethodPost, apiURL, bytes.NewReader(b))
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	req.Header = c.sess.headers(c.acct, "en", "")
+	req.Header["content-type"] = []string{"application/json"}
+	return c.doRaw(op, req)
+}
+
+// callJSON is callJSONRaw with a single-object JSON reply decoded to a map.
+func (c *XClient) callJSON(op, apiURL string, payload any) (map[string]any, error) {
+	body, err := c.callJSONRaw(op, apiURL, payload)
+	if err != nil {
+		return nil, err
 	}
 	var out map[string]any
 	if len(body) > 0 {

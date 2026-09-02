@@ -306,6 +306,35 @@ func (s *Server) deleteConversation(w http.ResponseWriter, r *http.Request) {
 	s.actWrite(w, r, "DMDeleteConversation", "deleted", (*xapi.XClient).DeleteConversation)
 }
 
+// sendDMBody is the JSON body for POST /v1/dm/conversations/{id}/messages.
+type sendDMBody struct {
+	Text string `json:"text"`
+}
+
+func (s *Server) sendDM(w http.ResponseWriter, r *http.Request) {
+	var body sendDMBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	if body.Text == "" {
+		writeError(w, http.StatusBadRequest, "provide text")
+		return
+	}
+	acct, ok := s.writeGuard(w, r, "DMNew")
+	if !ok {
+		return
+	}
+	cli := s.clientFor(acct)
+	dm, err := cli.SendDirectMessage(chi.URLParam(r, "id"), body.Text)
+	s.pool.Observe(acct.ID, "DMNew", cli.RateLimit())
+	if err != nil {
+		s.failWrite(w, r, acct.ID, "DMNew", err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, map[string]any{"data": dm})
+}
+
 // usernameBody is the JSON body for POST /v1/account/username.
 type usernameBody struct {
 	Username string `json:"username"`

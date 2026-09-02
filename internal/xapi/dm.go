@@ -11,6 +11,7 @@ const (
 	dmInboxInitialURL  = "https://x.com/i/api/1.1/dm/inbox_initial_state.json"
 	dmInboxTimelineURL = "https://x.com/i/api/1.1/dm/inbox_timeline/trusted.json"
 	dmDeleteURL        = "https://x.com/i/api/1.1/dm/"
+	dmNewURL           = "https://x.com/i/api/1.1/dm/new2.json"
 	// dmExt is x.com's pre-encoded ext param listing the message extensions to hydrate.
 	dmExt = "mediaColor,altText,businessAffiliationsLabel,mediaStats,highlightedLabel,parodyCommentaryFanLabel,voiceInfo,birdwatchPivot,superFollowMetadata,unmentionInfo,editControl,article"
 )
@@ -102,6 +103,31 @@ func (c *XClient) DeleteConversation(id string) error {
 	}
 	_, err := c.callForm("DMDeleteConversation", dmDeleteURL+id+"/delete.json", form)
 	return err
+}
+
+// SendDirectMessage sends a text message into an existing conversation and returns
+// the created message. conversationID is the inbox conversation id (for a 1:1 it
+// is "senderId-recipientId"). The reply carries the new message under event.message.
+func (c *XClient) SendDirectMessage(conversationID, text string) (*DirectMessage, error) {
+	payload := map[string]any{
+		"conversation_id":     conversationID,
+		"recipient_ids":       false,
+		"text":                text,
+		"cards_platform":      "Web-12",
+		"include_cards":       1,
+		"include_quote_count": true,
+		"dm_users":            false,
+	}
+	resp, err := c.callJSON("DMNew", dmNewURL, payload)
+	if err != nil {
+		return nil, err
+	}
+	if dm := parseDM(asMap(dig(resp, "event", "message"))); dm != nil {
+		return dm, nil
+	}
+	// Fall back to what we know when the reply shape is unexpected, so a successful
+	// send is never reported as a parse failure.
+	return &DirectMessage{ConversationID: conversationID, Text: text}, nil
 }
 
 // buildInbox assembles an Inbox from a raw inbox state (initial or timeline).

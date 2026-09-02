@@ -236,6 +236,7 @@ func (s *Server) v1Routes() []apiRoute {
 			{Name: "cursor", In: "query", Type: "string", Desc: "Load older history (oldest message id from a previous page)."},
 		}), s.dmConversation),
 		writeRoute(route("DELETE", "/v1/dm/conversations/{id}", "Delete (leave) a DM conversation", writeOK, nil), nil, 200, s.deleteConversation),
+		writeRoute(route("POST", "/v1/dm/conversations/{id}/messages", "Send a direct message", xapi.DirectMessage{}, nil), nil, 201, s.sendDM),
 		with(route("GET", "/v1/bookmarks/folders", "Bookmark folders (raw, account-scoped)", map[string]any{}, []openapi.Param{
 			{Name: "cursor", In: "query", Type: "string", Desc: "Pagination cursor."},
 		}), s.bookmarkFolders),

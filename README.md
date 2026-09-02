@@ -176,6 +176,7 @@ specific account):
 | `DELETE /v1/lists/{id}/members/{userId}` | none | remove a member from a list |
 | `POST /v1/lists/{id}/mute` | none | mute a list |
 | `DELETE /v1/lists/{id}/mute` | none | unmute a list |
+| `POST /v1/dm/conversations/{id}/messages` | `{"text": "..."}` | send a direct message into a conversation |
 | `DELETE /v1/dm/conversations/{id}` | none | delete (leave) a DM conversation |
 | `DELETE /v1/users/{handle}/follower` | none | remove a follower |
 | `POST /v1/account/username` | `{"username": "..."}` | change your @username |
