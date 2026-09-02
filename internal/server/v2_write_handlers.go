@@ -19,6 +19,8 @@ func (s *Server) mountV2Write(v chi.Router) {
 	v.Delete("/users/{id}/likes/{tweet_id}", s.v2Unlike)
 	v.Post("/users/{id}/retweets", s.v2Retweet)
 	v.Delete("/users/{id}/retweets/{source_tweet_id}", s.v2Unretweet)
+	v.Post("/users/{id}/following", s.v2Follow)
+	v.Delete("/users/{id}/following/{target_id}", s.v2Unfollow)
 }
 
 // v2TweetIDBody is the JSON body for the like/retweet POST endpoints.
@@ -77,6 +79,34 @@ func (s *Server) v2Unretweet(w http.ResponseWriter, r *http.Request) {
 	s.v2WriteResult(w, r, "DeleteRetweet",
 		func(c *xapi.XClient) error { return c.DeleteRetweet(tid) },
 		map[string]any{"retweeted": false})
+}
+
+// v2FollowBody is the JSON body for POST /2/users/{id}/following.
+type v2FollowBody struct {
+	TargetUserID string `json:"target_user_id"`
+}
+
+// v2Follow serves POST /2/users/{id}/following.
+func (s *Server) v2Follow(w http.ResponseWriter, r *http.Request) {
+	var body v2FollowBody
+	if !decodeV2Body(w, r, &body) {
+		return
+	}
+	if body.TargetUserID == "" {
+		writeJSON(w, http.StatusBadRequest, apiv2.Invalid("target_user_id", "The `target_user_id` field is required."))
+		return
+	}
+	s.v2WriteResult(w, r, "FollowUser",
+		func(c *xapi.XClient) error { return c.Follow(body.TargetUserID) },
+		map[string]any{"following": true, "pending_follow": false})
+}
+
+// v2Unfollow serves DELETE /2/users/{id}/following/{target_id}.
+func (s *Server) v2Unfollow(w http.ResponseWriter, r *http.Request) {
+	target := chi.URLParam(r, "target_id")
+	s.v2WriteResult(w, r, "UnfollowUser",
+		func(c *xapi.XClient) error { return c.Unfollow(target) },
+		map[string]any{"following": false})
 }
 
 // v2CreateTweetBody is the JSON body for POST /2/tweets, mirroring the X API v2
