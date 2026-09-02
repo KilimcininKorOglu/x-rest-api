@@ -184,6 +184,10 @@ func (s *Server) v1Routes() []apiRoute {
 		with(route("GET", "/v1/search", "Keyword/filter search (tweets)", tweets, searchParams(true)), s.search),
 		with(route("GET", "/v1/search/people", "Keyword/filter search (users)", []xapi.XUser{}, searchParams(false)), s.searchPeople),
 		with(route("GET", "/v1/search/rss", "Search results as an RSS 2.0 feed", tweets, searchParams(false)), s.searchRSS),
+		with(route("GET", "/v1/lists/by-slug", "List metadata by owner handle + slug", xapi.List{}, []openapi.Param{
+			{Name: "owner", In: "query", Type: "string", Desc: "List owner's @handle."},
+			{Name: "slug", In: "query", Type: "string", Desc: "List slug."},
+		}), s.listBySlug),
 		with(route("GET", "/v1/lists/{id}", "List metadata", xapi.List{}, rawOnlyParams), s.listInfo),
 		list("/v1/lists/{id}/tweets", "List timeline", s.listTweets),
 		with(route("GET", "/v1/lists/{id}/rss", "List timeline as an RSS 2.0 feed", tweets, rssParams), s.rssTweets("id", "ListLatestTweetsTimeline", (*xapi.XClient).ListTweets)),

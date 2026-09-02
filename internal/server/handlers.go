@@ -433,6 +433,20 @@ func sortMode(r *http.Request) string {
 
 // listInfo returns the raw ListByRestId result (name, description, member/subscriber
 // counts). Served raw because its shape is not the standard timeline.
+// listBySlug resolves a list by owner handle + slug.
+func (s *Server) listBySlug(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	owner, slug := q.Get("owner"), q.Get("slug")
+	if owner == "" || slug == "" {
+		writeError(w, http.StatusBadRequest, "provide owner and slug")
+		return
+	}
+	s.serveRead(w, r, false, "ListBySlug", func(c *xapi.XClient) (any, string, error) {
+		l, err := c.ListBySlug(owner, slug)
+		return l, "", err
+	})
+}
+
 func (s *Server) listInfo(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	s.serveRead(w, r, false, "ListByRestId", func(c *xapi.XClient) (any, string, error) {

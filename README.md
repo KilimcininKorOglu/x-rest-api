@@ -92,6 +92,7 @@ failure is `{"error": {"message": ...}}`. Every `/v1` route needs the Bearer key
 | `/v1/search/people?q=` | keyword/filter search (users) |
 | `/v1/search/rss?q=` | search results as an RSS 2.0 feed |
 | `/v1/lists/{id}` | list metadata (parsed; `?raw=true` for GQL) |
+| `/v1/lists/by-slug?owner=&slug=` | list metadata by owner handle + slug |
 | `/v1/lists/{id}/tweets` | list timeline |
 | `/v1/lists/{id}/rss` | list timeline as an RSS 2.0 feed |
 | `/v1/lists/{id}/members` | list members |

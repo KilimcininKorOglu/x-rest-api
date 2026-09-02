@@ -19,6 +19,27 @@ func (c *XClient) ListInfo(id string) (*List, error) {
 	return l, nil
 }
 
+// ListBySlug resolves a list by its owner's handle and slug (ListBySlug).
+func (c *XClient) ListBySlug(owner, slug string) (*List, error) {
+	payload, err := c.call("ListBySlug", map[string]any{"screenName": owner, "listSlug": slug})
+	if err != nil {
+		return nil, err
+	}
+	// The list arrives under one of a few schema paths; try each.
+	raw := asMap(dig(payload, "data", "list_by_slug"))
+	if raw == nil {
+		raw = asMap(dig(payload, "data", "user_by_screen_name", "list"))
+	}
+	if raw == nil {
+		raw = asMap(dig(payload, "data", "list"))
+	}
+	l := parseList(raw)
+	if l == nil {
+		return nil, fmt.Errorf("ListBySlug: %s", responseErr(payload))
+	}
+	return l, nil
+}
+
 // parseList builds a List from a raw list object, or nil when it has no id.
 func parseList(raw map[string]any) *List {
 	if raw == nil {
