@@ -19,7 +19,7 @@ import (
 // It needs a cookie.txt (browser cookie export JSON) at the repo root.
 func TestLiveBookmark(t *testing.T) {
 	acct := loadLiveAccount(t)
-	sess, err := NewSession("", "", "")
+	sess, err := NewSession("", "", "", "")
 	if err != nil {
 		t.Fatalf("NewSession: %v", err)
 	}
@@ -41,7 +41,7 @@ func TestLiveBookmark(t *testing.T) {
 //	go test -tags live -run TestLiveMedia -count=1 -v ./internal/xapi/
 func TestLiveMedia(t *testing.T) {
 	acct := loadLiveAccount(t)
-	sess, err := NewSession("", "", "")
+	sess, err := NewSession("", "", "", "")
 	if err != nil {
 		t.Fatalf("NewSession: %v", err)
 	}
@@ -71,7 +71,7 @@ func TestLiveMedia(t *testing.T) {
 //	go test -tags live -run TestLiveRetweet -count=1 -v ./internal/xapi/
 func TestLiveRetweet(t *testing.T) {
 	acct := loadLiveAccount(t)
-	sess, err := NewSession("", "", "")
+	sess, err := NewSession("", "", "", "")
 	if err != nil {
 		t.Fatalf("NewSession: %v", err)
 	}
@@ -93,7 +93,7 @@ func TestLiveRetweet(t *testing.T) {
 //
 //	go test -tags live -run TestLiveQueryIDRefresh -count=1 -v ./internal/xapi/
 func TestLiveQueryIDRefresh(t *testing.T) {
-	sess, err := NewSession("", "", "")
+	sess, err := NewSession("", "", "", "")
 	if err != nil {
 		t.Fatalf("NewSession: %v", err)
 	}
