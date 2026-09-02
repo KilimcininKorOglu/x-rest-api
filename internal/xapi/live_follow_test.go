@@ -13,7 +13,8 @@ import (
 // TestLiveFollow verifies Follow/Unfollow without disturbing the account's real
 // graph: it reads the target's initial follow state, follows, then unfollows only
 // when we were not already following. Run with:
-//   go test -tags live -run TestLiveFollow -count=1 -v ./internal/xapi/
+//
+//	go test -tags live -run TestLiveFollow -count=1 -v ./internal/xapi/
 func TestLiveFollow(t *testing.T) {
 	acct := loadLiveAccount(t)
 	sess, err := NewSession("", "", "")

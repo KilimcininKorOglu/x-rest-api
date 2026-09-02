@@ -13,7 +13,9 @@ import (
 )
 
 // TestLiveBookmark verifies the transaction-id fix against the real API. Run with:
-//   go test -tags live -run TestLiveBookmark -count=1 ./internal/xapi/
+//
+//	go test -tags live -run TestLiveBookmark -count=1 ./internal/xapi/
+//
 // It needs a cookie.txt (browser cookie export JSON) at the repo root.
 func TestLiveBookmark(t *testing.T) {
 	acct := loadLiveAccount(t)
@@ -35,7 +37,8 @@ func TestLiveBookmark(t *testing.T) {
 
 // TestLiveMedia uploads a small PNG, posts a tweet that attaches it, then deletes
 // the tweet. Run with:
-//   go test -tags live -run TestLiveMedia -count=1 -v ./internal/xapi/
+//
+//	go test -tags live -run TestLiveMedia -count=1 -v ./internal/xapi/
 func TestLiveMedia(t *testing.T) {
 	acct := loadLiveAccount(t)
 	sess, err := NewSession("", "", "")
@@ -64,7 +67,8 @@ func TestLiveMedia(t *testing.T) {
 
 // TestLiveRetweet reposts a permanent tweet, then removes the repost, verifying
 // the CreateRetweet queryId. Run with:
-//   go test -tags live -run TestLiveRetweet -count=1 -v ./internal/xapi/
+//
+//	go test -tags live -run TestLiveRetweet -count=1 -v ./internal/xapi/
 func TestLiveRetweet(t *testing.T) {
 	acct := loadLiveAccount(t)
 	sess, err := NewSession("", "", "")
@@ -86,7 +90,8 @@ func TestLiveRetweet(t *testing.T) {
 
 // TestLiveQueryIDRefresh checks that the bundle refresh reaches x.com's client
 // bundle and extracts the live write-mutation queryIds. Run with:
-//   go test -tags live -run TestLiveQueryIDRefresh -count=1 -v ./internal/xapi/
+//
+//	go test -tags live -run TestLiveQueryIDRefresh -count=1 -v ./internal/xapi/
 func TestLiveQueryIDRefresh(t *testing.T) {
 	sess, err := NewSession("", "", "")
 	if err != nil {

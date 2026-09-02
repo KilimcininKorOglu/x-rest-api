@@ -11,7 +11,8 @@ import (
 // TestLiveWrites smoke-tests each write surface and immediately reverses it, so
 // the account is left unchanged. Note tweets need X Premium and are expected to
 // fail. Run with:
-//   go test -tags live -run TestLiveWrites -count=1 -v ./internal/xapi/
+//
+//	go test -tags live -run TestLiveWrites -count=1 -v ./internal/xapi/
 func TestLiveWrites(t *testing.T) {
 	acct := loadLiveAccount(t)
 	sess, err := NewSession("", "", "")
