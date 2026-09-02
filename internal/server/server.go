@@ -90,6 +90,12 @@ var idsParams = []openapi.Param{
 	{Name: "raw", In: "query", Type: "boolean", Desc: "Return the unparsed GraphQL response instead of the flat model."},
 }
 
+// resolveParams documents the ?ids= / ?handles= query on the id<->username resolver.
+var resolveParams = []openapi.Param{
+	{Name: "ids", In: "query", Type: "string", Desc: "Comma-separated numeric ids to map to usernames (max 100)."},
+	{Name: "handles", In: "query", Type: "string", Desc: "Comma-separated @handles to map to ids (max 100)."},
+}
+
 // searchParams documents the structured-filter search query. q or any filter is
 // enough; the filters render into x.com's rawQuery operator string. withProduct
 // adds the tweets-only product selector.
@@ -158,6 +164,7 @@ func (s *Server) v1Routes() []apiRoute {
 
 	rs := []apiRoute{
 		with(route("GET", "/v1/users/{handle}", "Profile by handle or numeric id", xapi.XUser{}, rawOnlyParams), s.getUser),
+		with(route("GET", "/v1/users/{handle}/id", "Resolve one handle or numeric id to {id, username}", xapi.UserIdentity{}, nil), s.userID),
 		list("/v1/users/{handle}/tweets", "A user's posts", s.readTweets("handle", "UserTweets", (*xapi.XClient).UserTweets)),
 		list("/v1/users/{handle}/replies", "A user's posts and replies", s.readTweets("handle", "UserTweetsAndReplies", (*xapi.XClient).UserReplies)),
 		list("/v1/users/{handle}/media", "A user's media posts", s.readTweets("handle", "UserMedia", (*xapi.XClient).UserMedia)),
@@ -172,6 +179,7 @@ func (s *Server) v1Routes() []apiRoute {
 		with(route("GET", "/v1/users/{handle}/rss", "A user's posts as an RSS 2.0 feed", tweets, rssParams), s.rssTweets("handle", "UserTweets", (*xapi.XClient).UserTweets)),
 
 		with(route("GET", "/v1/users/by", "Look up many profiles by numeric id", []xapi.XUser{}, idsParams), s.usersByIDs),
+		with(route("GET", "/v1/users/resolve", "Bulk resolve ids to usernames or handles to ids ({id, username})", []xapi.UserIdentity{}, resolveParams), s.usersResolve),
 
 		with(route("GET", "/v1/tweets/{id}", "Focal tweet with its reply thread", xapi.TweetThread{}, rawOnlyParams), s.getTweet),
 		with(route("GET", "/v1/tweets/{id}/result", "A single tweet without its thread", xapi.Tweet{}, rawOnlyParams), s.getTweetResult),

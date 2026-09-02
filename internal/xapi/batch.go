@@ -47,6 +47,41 @@ func (c *XClient) UsersByIDs(ids []string) ([]XUser, error) {
 	return parseUsersByIds(payload), nil
 }
 
+// identity reduces a profile to its id<->username mapping.
+func identity(u XUser) UserIdentity {
+	return UserIdentity{ID: u.RestID, Username: u.ScreenName}
+}
+
+// IdentitiesByIDs maps many numeric ids to {id, username} in one call, reusing
+// UsersByIDs (UsersByRestIds).
+func (c *XClient) IdentitiesByIDs(ids []string) ([]UserIdentity, error) {
+	users, err := c.UsersByIDs(ids)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]UserIdentity, 0, len(users))
+	for _, u := range users {
+		out = append(out, identity(u))
+	}
+	return out, nil
+}
+
+// ResolveHandles maps many @handles to {id, username}, one UserByScreenName call
+// per handle (x.com has no batch handle lookup). Unknown handles are skipped.
+func (c *XClient) ResolveHandles(handles []string) ([]UserIdentity, error) {
+	out := make([]UserIdentity, 0, len(handles))
+	for _, h := range clampIDs(handles) {
+		u, err := c.GetUser(h)
+		if err != nil {
+			return nil, err
+		}
+		if u != nil && u.RestID != "" {
+			out = append(out, identity(*u))
+		}
+	}
+	return out, nil
+}
+
 // TweetsByIDs fetches multiple tweets in one call (TweetResultsByRestIds).
 func (c *XClient) TweetsByIDs(ids []string) ([]Tweet, error) {
 	payload, err := c.call("TweetResultsByRestIds", map[string]any{"tweetIds": clampIDs(ids)})

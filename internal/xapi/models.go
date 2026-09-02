@@ -3,6 +3,13 @@ package xapi
 import "fmt"
 
 // XUser is a flat profile record. Callers (a monitor, a CSV export, a DB row)
+// UserIdentity is the minimal id<->username mapping for a user, without the rest
+// of the profile.
+type UserIdentity struct {
+	ID       string `json:"id"`       // numeric user id (rest_id)
+	Username string `json:"username"` // screen_name
+}
+
 // do not have to know about x.com's nested GraphQL shapes.
 type XUser struct {
 	RestID           string     `json:"rest_id"` // numeric user id (stable key; screen_names change)

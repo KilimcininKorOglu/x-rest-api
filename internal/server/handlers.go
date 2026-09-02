@@ -546,15 +546,54 @@ func (s *Server) getRetweeters(w http.ResponseWriter, r *http.Request) {
 }
 
 // idsParam reads a comma-separated ?ids= list into a trimmed, non-empty slice.
-func idsParam(r *http.Request) []string {
-	raw := r.URL.Query().Get("ids")
+// csvParam splits a comma-separated query parameter, trimming blanks.
+func csvParam(r *http.Request, key string) []string {
 	var out []string
-	for p := range strings.SplitSeq(raw, ",") {
+	for p := range strings.SplitSeq(r.URL.Query().Get(key), ",") {
 		if p = strings.TrimSpace(p); p != "" {
 			out = append(out, p)
 		}
 	}
 	return out
+}
+
+func idsParam(r *http.Request) []string { return csvParam(r, "ids") }
+
+// userID returns just the id<->username mapping for one user (handle or numeric).
+func (s *Server) userID(w http.ResponseWriter, r *http.Request) {
+	handle := chi.URLParam(r, "handle")
+	s.serveRead(w, r, false, "UserByScreenName", func(c *xapi.XClient) (any, string, error) {
+		u, err := lookupUser(c, handle)
+		if err != nil {
+			return nil, "", err
+		}
+		if u == nil {
+			return nil, "", errNotFound
+		}
+		return xapi.UserIdentity{ID: u.RestID, Username: u.ScreenName}, "", nil
+	})
+}
+
+// usersResolve maps many users to {id, username}. ?ids= resolves numeric ids to
+// usernames (one UsersByRestIds call); ?handles= resolves @handles to ids (one
+// UserByScreenName call per handle).
+func (s *Server) usersResolve(w http.ResponseWriter, r *http.Request) {
+	ids, handles := idsParam(r), csvParam(r, "handles")
+	if len(ids) == 0 && len(handles) == 0 {
+		writeError(w, http.StatusBadRequest, "provide ids or handles (comma-separated)")
+		return
+	}
+	if len(ids) > 0 {
+		s.serveRead(w, r, false, "UsersByRestIds", func(c *xapi.XClient) (any, string, error) {
+			out, err := c.IdentitiesByIDs(ids)
+			return out, "", err
+		})
+		return
+	}
+	s.serveRead(w, r, false, "UserByScreenName", func(c *xapi.XClient) (any, string, error) {
+		out, err := c.ResolveHandles(handles)
+		return out, "", err
+	})
 }
 
 // usersByIDs looks up many profiles in one call (UsersByRestIds).

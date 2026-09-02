@@ -68,6 +68,7 @@ failure is `{"error": {"message": ...}}`. Every `/v1` route needs the Bearer key
 | `/openapi.json`                              | OpenAPI 3.0.3 schema, auto-generated from the route table (no auth)               |
 | `/docs`                                      | Swagger UI over `/openapi.json`, vendored (no auth)                               |
 | `/v1/users/{handle}`                         | profile (numeric `{handle}` uses UserByRestId)                                    |
+| `/v1/users/{handle}/id`                      | resolve one handle or numeric id to `{id, username}`                              |
 | `/v1/users/{handle}/tweets`                  | a user's posts                                                                    |
 | `/v1/users/{handle}/replies`                 | posts + replies                                                                   |
 | `/v1/users/{handle}/media`                   | media posts                                                                       |
@@ -80,6 +81,7 @@ failure is `{"error": {"message": ...}}`. Every `/v1` route needs the Bearer key
 | `/v1/users/{handle}/about`                   | account origin, username history, identity verification                           |
 | `/v1/users/{handle}/rss`                     | a user's posts as an RSS 2.0 feed                                                 |
 | `/v1/users/by?ids=`                          | batch profile lookup (comma-separated numeric ids, max 100)                       |
+| `/v1/users/resolve?ids=` / `?handles=`       | bulk `{id, username}`: `ids` maps to usernames, `handles` maps to ids (max 100)   |
 | `/v1/tweets/{id}`                            | focal tweet + reply thread                                                        |
 | `/v1/tweets/{id}/result`                     | single tweet, no thread                                                           |
 | `/v1/tweets/{id}/thread`                     | tweets in the conversation (self-thread); `?sort=relevance\|recency\|likes`       |
