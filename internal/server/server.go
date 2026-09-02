@@ -166,6 +166,7 @@ func (s *Server) v1Routes() []apiRoute {
 		usersList("/v1/users/{handle}/following", "Who a user follows", s.readUsers("handle", "Following", (*xapi.XClient).Following)),
 		usersList("/v1/users/{handle}/verified-followers", "A user's verified followers", s.readUsers("handle", "BlueVerifiedFollowers", (*xapi.XClient).VerifiedFollowers)),
 		usersList("/v1/users/{handle}/subscriptions", "Creators a user subscribes to", s.readUsers("handle", "UserCreatorSubscriptions", (*xapi.XClient).Subscriptions)),
+		usersList("/v1/users/{handle}/affiliates", "A user's business-profile affiliates", s.readUsers("handle", "UserBusinessProfileTeamTimeline", (*xapi.XClient).Affiliates)),
 		with(route("GET", "/v1/users/{handle}/about", "Account origin, username history, identity verification", xapi.AccountAbout{}, rawOnlyParams), s.userAbout),
 		with(route("GET", "/v1/users/{handle}/rss", "A user's posts as an RSS 2.0 feed", tweets, rssParams), s.rssTweets("handle", "UserTweets", (*xapi.XClient).UserTweets)),
 
@@ -213,6 +214,22 @@ func (s *Server) v1Routes() []apiRoute {
 			{Name: "cursor", In: "query", Type: "string", Desc: "Pagination cursor; when set, returns a single page."},
 			{Name: "raw", In: "query", Type: "boolean", Desc: "Return the unparsed GraphQL response."},
 		}), s.home),
+		with(route("GET", "/v1/suggestions", "Who-to-follow recommendations (account-scoped)", []xapi.XUser{}, []openapi.Param{
+			{Name: "creator_only", In: "query", Type: "boolean", Desc: "Limit to creators."},
+			{Name: "count", In: "query", Type: "integer", Desc: "Items to return (default 40, max 200)."},
+			{Name: "cursor", In: "query", Type: "string", Desc: "Pagination cursor."},
+		}), s.suggestions),
+		with(route("GET", "/v1/lists", "Your own lists (account-scoped)", []xapi.List{}, []openapi.Param{
+			{Name: "count", In: "query", Type: "integer", Desc: "Items to return (default 40, max 200)."},
+			{Name: "cursor", In: "query", Type: "string", Desc: "Pagination cursor."},
+		}), s.ownLists),
+		with(route("GET", "/v1/analytics", "Account analytics overview (account-scoped)", map[string]any{}, []openapi.Param{
+			{Name: "from_time", In: "query", Type: "string", Desc: "Window start (ISO or epoch)."},
+			{Name: "to_time", In: "query", Type: "string", Desc: "Window end (ISO or epoch)."},
+			{Name: "granularity", In: "query", Type: "string", Desc: "Day | Hour | Total (default Day)."},
+			{Name: "metrics", In: "query", Type: "string", Desc: "Comma-separated metric names."},
+			{Name: "verified_followers", In: "query", Type: "boolean", Desc: "Include verified-follower breakdown."},
+		}), s.analytics),
 
 		writeRoute(route("POST", "/v1/media", "Upload media (multipart field 'file'); returns media_id", map[string]any{}, nil), nil, 201, s.uploadMedia),
 		writeRoute(route("POST", "/v1/tweets", "Post a tweet, reply, or quote (optional media_ids)", xapi.Tweet{}, nil), createTweetBody{}, 201, s.createTweet),

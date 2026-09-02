@@ -1,6 +1,9 @@
 package xapi
 
-import "strconv"
+import (
+	"strconv"
+	"time"
+)
 
 // Pure parsers for x.com GraphQL responses: dict -> records, no network, so they
 // can be unit-tested against captured HAR bodies.
@@ -43,6 +46,28 @@ func asInt(v any) int {
 		}
 	}
 	return 0
+}
+
+// asBool coerces a JSON value to bool (missing/other types yield false).
+func asBool(v any) bool {
+	b, _ := v.(bool)
+	return b
+}
+
+// epochToISO renders an epoch value (ms as number or numeric string) as an
+// RFC3339 UTC string; a non-numeric string is returned unchanged (already a
+// date), and anything else yields "".
+func epochToISO(v any) string {
+	switch n := v.(type) {
+	case float64:
+		return time.UnixMilli(int64(n)).UTC().Format(time.RFC3339)
+	case string:
+		if ms, err := strconv.ParseInt(n, 10, 64); err == nil {
+			return time.UnixMilli(ms).UTC().Format(time.RFC3339)
+		}
+		return n
+	}
+	return ""
 }
 
 // dig walks nested maps by key, returning the leaf value or nil.

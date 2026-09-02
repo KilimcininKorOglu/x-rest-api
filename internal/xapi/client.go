@@ -501,6 +501,40 @@ func (c *XClient) Subscriptions(handle string, count int, cursor string) ([]XUse
 	return c.userGraph("UserCreatorSubscriptions", handle, count, cursor)
 }
 
+// Affiliates returns a user's business-profile team members. The ops.json entry
+// carries the fixed teamName/withVoice variables; only userId is dynamic.
+func (c *XClient) Affiliates(handle string, count int, cursor string) ([]XUser, string, error) {
+	return c.userGraph("UserBusinessProfileTeamTimeline", handle, count, cursor)
+}
+
+// Suggestions returns the account's "who to follow" recommendations. creatorOnly
+// limits them to creators; the context variable is itself a JSON-encoded string.
+func (c *XClient) Suggestions(creatorOnly bool, count int, cursor string) ([]XUser, string, error) {
+	ctx := "{}"
+	if creatorOnly {
+		ctx = `{"isCreatorOnlyConnectTab":true}`
+	}
+	return paginate(c, "ConnectTabTimeline", map[string]any{"context": ctx}, parseTimelineUsers, userKey, count, cursor)
+}
+
+// OwnLists returns the authenticated account's own lists (account-scoped).
+func (c *XClient) OwnLists(count int, cursor string) ([]List, string, error) {
+	return paginate(c, "ListsManagementPageTimeline", map[string]any{}, parseListsTimeline, listKey, count, cursor)
+}
+
+// Analytics returns the account's raw analytics overview for a time window.
+// Metrics and granularity are caller-supplied; the shape varies per metric set,
+// so this returns the decoded response as-is.
+func (c *XClient) Analytics(fromTime, toTime, granularity string, metrics []string, verifiedFollowers bool) (map[string]any, error) {
+	return c.call("AccountOverviewQuery", map[string]any{
+		"from_time":               fromTime,
+		"to_time":                 toTime,
+		"granularity":             granularity,
+		"requested_metrics":       metrics,
+		"show_verified_followers": verifiedFollowers,
+	})
+}
+
 // ListMembers returns the members of a list (keyed by listId, not a handle).
 func (c *XClient) ListMembers(listID string, count int, cursor string) ([]XUser, string, error) {
 	return paginate(c, "ListMembers", map[string]any{"listId": listID}, parseTimelineUsers, userKey, count, cursor)

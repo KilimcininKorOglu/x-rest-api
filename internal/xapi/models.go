@@ -185,3 +185,17 @@ func tweetURL(screenName, restID string) string {
 	}
 	return "https://x.com/i/status/" + restID
 }
+
+// List is a Twitter List's metadata.
+type List struct {
+	ID              string `json:"id"`
+	Name            string `json:"name"`
+	Description     string `json:"description,omitempty"`
+	CreatedAt       string `json:"created_at,omitempty"`
+	CreatedBy       string `json:"created_by,omitempty"` // owner's rest_id
+	MemberCount     int    `json:"member_count"`
+	SubscriberCount int    `json:"subscriber_count"`
+	IsFollowing     bool   `json:"is_following"`
+	IsMember        bool   `json:"is_member"`
+	Private         bool   `json:"private"`
+}

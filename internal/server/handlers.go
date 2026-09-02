@@ -803,6 +803,43 @@ func (s *Server) bookmarks(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// suggestions serves who-to-follow recommendations (account-scoped).
+// ?creator_only=true limits them to creators.
+func (s *Server) suggestions(w http.ResponseWriter, r *http.Request) {
+	count, cursor := countParam(r), cursorParam(r)
+	creatorOnly := r.URL.Query().Get("creator_only") == "true"
+	s.serveRead(w, r, true, "ConnectTabTimeline", func(c *xapi.XClient) (any, string, error) {
+		return asRead(c.Suggestions(creatorOnly, count, cursor))
+	})
+}
+
+// ownLists serves the authenticated account's own lists (account-scoped).
+func (s *Server) ownLists(w http.ResponseWriter, r *http.Request) {
+	count, cursor := countParam(r), cursorParam(r)
+	s.serveRead(w, r, true, "ListsManagementPageTimeline", func(c *xapi.XClient) (any, string, error) {
+		return asRead(c.OwnLists(count, cursor))
+	})
+}
+
+// analytics serves the account's analytics overview (account-scoped). The time
+// window, granularity and metric set come from query params; the response shape
+// varies per metric set, so it is returned raw.
+func (s *Server) analytics(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	granularity := q.Get("granularity")
+	if granularity == "" {
+		granularity = "Day"
+	}
+	var metrics []string
+	if m := q.Get("metrics"); m != "" {
+		metrics = strings.Split(m, ",")
+	}
+	s.serveRead(w, r, true, "AccountOverviewQuery", func(c *xapi.XClient) (any, string, error) {
+		out, err := c.Analytics(q.Get("from_time"), q.Get("to_time"), granularity, metrics, q.Get("verified_followers") == "true")
+		return out, "", err
+	})
+}
+
 // home serves the ranked home timeline, or the chronological one with
 // ?chronological=true (aka ?latest=true).
 func (s *Server) home(w http.ResponseWriter, r *http.Request) {
