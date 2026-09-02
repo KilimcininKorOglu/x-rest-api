@@ -168,6 +168,13 @@ func v2Paths(idParam map[string]any) map[string]any {
 		"/2/users/{id}/liked_tweets":                    map[string]any{"get": v2ListOp("Tweets a user liked", idParam)},
 		"/2/users/{id}/followers":                       map[string]any{"get": v2ListOp("A user's followers", idParam)},
 		"/2/users/{id}/timelines/reverse_chronological": map[string]any{"get": v2ListOp("The account's home timeline", idParam)},
+		"/2/users/{id}/bookmarks": map[string]any{
+			"get":  v2ListOp("The account's bookmarks", idParam),
+			"post": v2WriteOp("Bookmark a tweet", true, idParam),
+		},
+		"/2/users/{id}/bookmarks/{tweet_id}": map[string]any{"delete": v2WriteOp("Remove a bookmark", false, idParam, v2PathParam("tweet_id", "The bookmarked tweet id."))},
+		"/2/users/{id}/muting":               map[string]any{"post": v2WriteOp("Mute a user", true, idParam)},
+		"/2/users/{id}/muting/{target_id}":   map[string]any{"delete": v2WriteOp("Unmute a user", false, idParam, v2PathParam("target_id", "The muted user id."))},
 	}
 }
 

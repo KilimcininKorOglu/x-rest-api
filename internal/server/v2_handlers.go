@@ -26,6 +26,16 @@ func (s *Server) mountV2(v chi.Router) {
 	v.Get("/users/{id}/followers", s.v2Followers)
 	v.Get("/users/{id}/following", s.v2FollowingList)
 	v.Get("/users/{id}/timelines/reverse_chronological", s.v2ReverseChronological)
+	v.Get("/users/{id}/bookmarks", s.v2Bookmarks)
+}
+
+// v2Bookmarks serves GET /2/users/{id}/bookmarks, the account's bookmarked tweets.
+// It is account-scoped and ignores {id}, serving the pinned account's bookmarks.
+func (s *Server) v2Bookmarks(w http.ResponseWriter, r *http.Request) {
+	s.v2TweetsPage(w, r, true, "Bookmarks",
+		func(c *xapi.XClient, max int, cur string) ([]xapi.Tweet, string, error) {
+			return c.Bookmarks(max, cur)
+		})
 }
 
 // withMissing appends resource-not-found errors for requested ids/handles absent

@@ -21,6 +21,10 @@ func (s *Server) mountV2Write(v chi.Router) {
 	v.Delete("/users/{id}/retweets/{source_tweet_id}", s.v2Unretweet)
 	v.Post("/users/{id}/following", s.v2Follow)
 	v.Delete("/users/{id}/following/{target_id}", s.v2Unfollow)
+	v.Post("/users/{id}/bookmarks", s.v2Bookmark)
+	v.Delete("/users/{id}/bookmarks/{tweet_id}", s.v2Unbookmark)
+	v.Post("/users/{id}/muting", s.v2Mute)
+	v.Delete("/users/{id}/muting/{target_id}", s.v2Unmute)
 }
 
 // v2TweetIDBody is the JSON body for the like/retweet POST endpoints.
@@ -107,6 +111,48 @@ func (s *Server) v2Unfollow(w http.ResponseWriter, r *http.Request) {
 	s.v2WriteResult(w, r, "UnfollowUser",
 		func(c *xapi.XClient) error { return c.Unfollow(target) },
 		map[string]any{"following": false})
+}
+
+// v2Bookmark serves POST /2/users/{id}/bookmarks.
+func (s *Server) v2Bookmark(w http.ResponseWriter, r *http.Request) {
+	tid, ok := tweetIDFromBody(w, r)
+	if !ok {
+		return
+	}
+	s.v2WriteResult(w, r, "CreateBookmark",
+		func(c *xapi.XClient) error { return c.CreateBookmark(tid) },
+		map[string]any{"bookmarked": true})
+}
+
+// v2Unbookmark serves DELETE /2/users/{id}/bookmarks/{tweet_id}.
+func (s *Server) v2Unbookmark(w http.ResponseWriter, r *http.Request) {
+	tid := chi.URLParam(r, "tweet_id")
+	s.v2WriteResult(w, r, "DeleteBookmark",
+		func(c *xapi.XClient) error { return c.DeleteBookmark(tid) },
+		map[string]any{"bookmarked": false})
+}
+
+// v2Mute serves POST /2/users/{id}/muting.
+func (s *Server) v2Mute(w http.ResponseWriter, r *http.Request) {
+	var body v2FollowBody
+	if !decodeV2Body(w, r, &body) {
+		return
+	}
+	if body.TargetUserID == "" {
+		writeJSON(w, http.StatusBadRequest, apiv2.Invalid("target_user_id", "The `target_user_id` field is required."))
+		return
+	}
+	s.v2WriteResult(w, r, "MuteUser",
+		func(c *xapi.XClient) error { return c.Mute(body.TargetUserID) },
+		map[string]any{"muting": true})
+}
+
+// v2Unmute serves DELETE /2/users/{id}/muting/{target_id}.
+func (s *Server) v2Unmute(w http.ResponseWriter, r *http.Request) {
+	target := chi.URLParam(r, "target_id")
+	s.v2WriteResult(w, r, "UnmuteUser",
+		func(c *xapi.XClient) error { return c.Unmute(target) },
+		map[string]any{"muting": false})
 }
 
 // v2CreateTweetBody is the JSON body for POST /2/tweets, mirroring the X API v2
