@@ -84,6 +84,28 @@ func TestLiveRetweet(t *testing.T) {
 	t.Log("DeleteRetweet: OK (cleaned up)")
 }
 
+// TestLiveQueryIDRefresh checks that the bundle refresh reaches x.com's client
+// bundle and extracts the live write-mutation queryIds. Run with:
+//   go test -tags live -run TestLiveQueryIDRefresh -count=1 -v ./internal/xapi/
+func TestLiveQueryIDRefresh(t *testing.T) {
+	sess, err := NewSession("", "", "")
+	if err != nil {
+		t.Fatalf("NewSession: %v", err)
+	}
+	ids, err := sess.FetchQueryIDs()
+	if err != nil {
+		t.Fatalf("FetchQueryIDs: %v", err)
+	}
+	t.Logf("fetched %d operationName->queryId pairs", len(ids))
+	for _, op := range []string{"CreateTweet", "CreateRetweet", "CreateBookmark", "FavoriteTweet", "DeleteTweet"} {
+		if q := ids[op]; q != "" {
+			t.Logf("  %-16s %s", op, q)
+		} else {
+			t.Logf("  %-16s MISSING", op)
+		}
+	}
+}
+
 // makePNG returns a small solid-color PNG for the media upload test.
 func makePNG() []byte {
 	img := image.NewRGBA(image.Rect(0, 0, 64, 64))
