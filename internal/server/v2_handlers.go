@@ -30,6 +30,25 @@ func (s *Server) mountV2(v chi.Router) {
 	v.Get("/lists/{id}", s.v2List)
 	v.Get("/lists/{id}/tweets", s.v2ListTweets)
 	v.Get("/lists/{id}/members", s.v2ListMembers)
+	v.Get("/dm_events", s.v2DMEvents)
+}
+
+// v2DMEvents serves GET /2/dm_events, the account's direct-message events. It is
+// account-scoped and flattens the inbox conversations into a v2 dm_events list.
+func (s *Server) v2DMEvents(w http.ResponseWriter, r *http.Request) {
+	cursor := r.URL.Query().Get("pagination_token")
+	s.serveV2(w, r, true, "DMInboxInitial", func(c *xapi.XClient) (apiv2.Envelope, error) {
+		inbox, err := c.Inbox(cursor)
+		if err != nil {
+			return apiv2.Envelope{}, err
+		}
+		events := apiv2.DMEvents(inbox)
+		env := apiv2.Envelope{Data: events, Meta: &apiv2.Meta{ResultCount: len(events)}}
+		if inbox.Cursor != "" {
+			env.Meta.NextToken = inbox.Cursor
+		}
+		return env, nil
+	})
 }
 
 // v2List serves GET /2/lists/{id}.

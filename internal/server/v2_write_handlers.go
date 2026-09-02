@@ -30,6 +30,40 @@ func (s *Server) mountV2Write(v chi.Router) {
 	v.Delete("/lists/{id}", s.v2DeleteList)
 	v.Post("/lists/{id}/members", s.v2ListAddMember)
 	v.Delete("/lists/{id}/members/{user_id}", s.v2ListRemoveMember)
+	v.Post("/dm_conversations/{id}/messages", s.v2SendDM)
+}
+
+// v2SendDMBody is the JSON body for POST /2/dm_conversations/{id}/messages.
+type v2SendDMBody struct {
+	Text string `json:"text"`
+}
+
+// v2SendDM serves POST /2/dm_conversations/{id}/messages.
+func (s *Server) v2SendDM(w http.ResponseWriter, r *http.Request) {
+	convID := chi.URLParam(r, "id")
+	var body v2SendDMBody
+	if !decodeV2Body(w, r, &body) {
+		return
+	}
+	if body.Text == "" {
+		writeJSON(w, http.StatusBadRequest, apiv2.Invalid("text", "The `text` field is required."))
+		return
+	}
+	acct, ok := s.writeGuardV2(w, r, "DMNew")
+	if !ok {
+		return
+	}
+	cli := s.clientFor(acct)
+	dm, err := cli.SendDirectMessage(convID, body.Text)
+	s.pool.Observe(acct.ID, "DMNew", cli.RateLimit())
+	if err != nil {
+		s.failWriteV2(w, r, acct.ID, "DMNew", err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, apiv2.Envelope{Data: map[string]any{
+		"dm_conversation_id": dm.ConversationID,
+		"dm_event_id":        dm.ID,
+	}})
 }
 
 // v2TweetIDBody is the JSON body for the like/retweet POST endpoints.

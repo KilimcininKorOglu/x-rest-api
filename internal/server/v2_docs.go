@@ -184,6 +184,9 @@ func v2Paths(idParam map[string]any) map[string]any {
 		"/2/lists/{id}/tweets":            map[string]any{"get": v2ListOp("A list's tweets", idParam)},
 		"/2/lists/{id}/members":           map[string]any{"get": v2ListOp("A list's members", idParam), "post": v2WriteOp("Add a list member", true, idParam)},
 		"/2/lists/{id}/members/{user_id}": map[string]any{"delete": v2WriteOp("Remove a list member", false, idParam, v2PathParam("user_id", "The member's user id."))},
+		"/2/dm_events":                    map[string]any{"get": v2ListOp("The account's direct-message events")},
+		"/2/dm_conversations/{id}/messages": map[string]any{"post": v2WriteOp("Send a direct message", true,
+			v2PathParam("id", "The dm_conversation_id."))},
 	}
 }
 
