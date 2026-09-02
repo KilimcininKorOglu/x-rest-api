@@ -17,6 +17,7 @@ func (s *Server) mountV2(v chi.Router) {
 	v.Get("/users/{id}", s.v2UserByID)
 	v.Get("/users", s.v2UsersByIDs)
 	v.Get("/users/{id}/tweets", s.v2UserTweets)
+	v.Get("/tweets/search/recent", s.v2SearchRecent)
 	v.Get("/tweets/{id}", s.v2Tweet)
 	v.Get("/tweets", s.v2TweetsByIDs)
 }
@@ -148,6 +149,39 @@ func (s *Server) v2TweetsByIDs(w http.ResponseWriter, r *http.Request) {
 			return apiv2.Envelope{}, err
 		}
 		return withMissing(env, ids, "id", "tweet", "id"), nil
+	})
+}
+
+// v2SearchRecent serves GET /2/tweets/search/recent, the recent (reverse-
+// chronological) tweet search with v2 max_results/next_token paging and
+// newest_id/oldest_id meta.
+func (s *Server) v2SearchRecent(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query().Get("query")
+	if query == "" {
+		writeJSON(w, http.StatusBadRequest,
+			apiv2.Invalid("query", "The `query` query parameter is required."))
+		return
+	}
+	sel := apiv2.ParseSelection(r.URL.Query())
+	max := v2MaxResults(r)
+	token := r.URL.Query().Get("next_token")
+	s.serveV2(w, r, false, "SearchTimeline", func(c *xapi.XClient) (apiv2.Envelope, error) {
+		tws, next, err := c.Search(query, "Latest", max, token)
+		if err != nil {
+			return apiv2.Envelope{}, err
+		}
+		env, err := apiv2.TweetsEnvelope(c, tws, sel, true)
+		if err != nil {
+			return apiv2.Envelope{}, err
+		}
+		if env.Meta != nil {
+			env.Meta.NextToken = next
+			if len(tws) > 0 {
+				env.Meta.NewestID = tws[0].RestID
+				env.Meta.OldestID = tws[len(tws)-1].RestID
+			}
+		}
+		return env, nil
 	})
 }
 

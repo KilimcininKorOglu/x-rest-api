@@ -118,6 +118,10 @@ func v2Paths(idParam map[string]any) map[string]any {
 			v2QueryParam("pagination_token", "Cursor from a previous meta.next_token."))},
 		"/2/tweets/{id}": map[string]any{"get": v2Op("Look up a tweet by id", idParam)},
 		"/2/tweets":      map[string]any{"get": v2Op("Look up tweets by id", v2QueryParam("ids", "Comma-separated tweet ids (required)."))},
+		"/2/tweets/search/recent": map[string]any{"get": v2Op("Recent tweet search",
+			v2QueryParam("query", "Search query (required)."),
+			v2QueryParam("max_results", "Page size, 5-100 (default 10)."),
+			v2QueryParam("next_token", "Cursor from a previous meta.next_token."))},
 	}
 }
 

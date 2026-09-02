@@ -27,6 +27,7 @@ func TestV2Spec(t *testing.T) {
 		"/2/users/{id}/tweets",
 		"/2/tweets/{id}",
 		"/2/tweets",
+		"/2/tweets/search/recent",
 	}
 	if len(paths) != len(want) {
 		t.Errorf("path count = %d, want %d", len(paths), len(want))
