@@ -844,6 +844,43 @@ func (s *Server) analytics(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// jobSearch searches X Jobs from structured query params.
+func (s *Server) jobSearch(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	f := xapi.JobSearchFilter{
+		Keyword:        q.Get("keyword"),
+		LocationID:     q.Get("location_id"),
+		Location:       q.Get("location"),
+		LocationType:   q.Get("location_type"),
+		SeniorityLevel: q.Get("seniority"),
+		CompanyName:    q.Get("company"),
+		EmploymentType: q.Get("employment_type"),
+		Industry:       q.Get("industry"),
+	}
+	count, cursor := countParam(r), cursorParam(r)
+	s.serveRead(w, r, false, "JobSearchQueryScreenJobsQuery", func(c *xapi.XClient) (any, string, error) {
+		return asRead(c.JobSearch(f, count, cursor))
+	})
+}
+
+// jobDetails returns one job by id.
+func (s *Server) jobDetails(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	s.serveRead(w, r, false, "JobScreenQuery", func(c *xapi.XClient) (any, string, error) {
+		j, err := c.JobDetails(id)
+		return j, "", err
+	})
+}
+
+// jobLocations returns location suggestions for a query.
+func (s *Server) jobLocations(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query().Get("query")
+	s.serveRead(w, r, false, "LocationSelectorQuery", func(c *xapi.XClient) (any, string, error) {
+		locs, err := c.JobLocations(query)
+		return locs, "", err
+	})
+}
+
 // home serves the ranked home timeline, or the chronological one with
 // ?chronological=true (aka ?latest=true).
 func (s *Server) home(w http.ResponseWriter, r *http.Request) {

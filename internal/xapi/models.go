@@ -186,6 +186,48 @@ func tweetURL(screenName, restID string) string {
 	return "https://x.com/i/status/" + restID
 }
 
+// Job is an X Jobs posting.
+type Job struct {
+	ID                 string      `json:"id"`
+	Title              string      `json:"title"`
+	Description        string      `json:"description,omitempty"`
+	Location           string      `json:"location,omitempty"`
+	JobFunction        string      `json:"job_function,omitempty"`
+	FormattedSalary    string      `json:"formatted_salary,omitempty"`
+	SalaryMin          int         `json:"salary_min,omitempty"`
+	SalaryMax          int         `json:"salary_max,omitempty"`
+	SalaryInterval     int         `json:"salary_interval,omitempty"`
+	SalaryCurrencyCode string      `json:"salary_currency_code,omitempty"`
+	JobPageURL         string      `json:"job_page_url,omitempty"`
+	RedirectURL        string      `json:"redirect_url,omitempty"`
+	IsFeatured         bool        `json:"is_featured,omitempty"`
+	Company            *JobCompany `json:"company,omitempty"`
+	User               *JobUser    `json:"user,omitempty"`
+}
+
+// JobCompany is the hiring company on a Job.
+type JobCompany struct {
+	ID   string `json:"id,omitempty"`
+	Name string `json:"name"`
+	Logo string `json:"logo,omitempty"`
+}
+
+// JobUser is the poster account on a Job.
+type JobUser struct {
+	ID           string `json:"id"`
+	UserName     string `json:"user_name"`
+	FullName     string `json:"full_name,omitempty"`
+	ProfileImage string `json:"profile_image,omitempty"`
+	IsVerified   bool   `json:"is_verified,omitempty"`
+	VerifiedType string `json:"verified_type,omitempty"`
+}
+
+// JobLocation is a location suggestion for a job search.
+type JobLocation struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
 // List is a Twitter List's metadata.
 type List struct {
 	ID              string `json:"id"`

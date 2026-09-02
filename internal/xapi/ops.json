@@ -2037,5 +2037,31 @@
 			"listId": ""
 		},
 		"features": {}
+	},
+	"JobSearchQueryScreenJobsQuery": {
+		"queryId": "jVMK9qcOUB5xQQdSLr5ECg",
+		"method": "GET",
+		"variables": {
+			"count": 25,
+			"searchParams": {}
+		},
+		"features": {}
+	},
+	"JobScreenQuery": {
+		"queryId": "8uZH_OBKTFNIMzTJaV5lbQ",
+		"method": "GET",
+		"variables": {
+			"jobId": "",
+			"loggedIn": true
+		},
+		"features": {}
+	},
+	"LocationSelectorQuery": {
+		"queryId": "hbib0bN-dlHHvUhiy3YVyg",
+		"method": "GET",
+		"variables": {
+			"query": ""
+		},
+		"features": {}
 	}
 }

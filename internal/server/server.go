@@ -209,6 +209,22 @@ func (s *Server) v1Routes() []apiRoute {
 			{Name: "cursor", In: "query", Type: "string", Desc: "Pagination cursor."},
 		}), s.notifications),
 		with(route("GET", "/v1/spaces/{id}", "Space info by id (raw)", map[string]any{}, rawOnlyParams), s.spaceInfo),
+		with(route("GET", "/v1/jobs/search", "Search X Jobs", []xapi.Job{}, []openapi.Param{
+			{Name: "keyword", In: "query", Type: "string", Desc: "Search keyword."},
+			{Name: "location", In: "query", Type: "string", Desc: "Location name."},
+			{Name: "location_id", In: "query", Type: "string", Desc: "Location id (from /v1/jobs/locations)."},
+			{Name: "location_type", In: "query", Type: "string", Desc: "e.g. REMOTE."},
+			{Name: "seniority", In: "query", Type: "string", Desc: "Seniority level."},
+			{Name: "company", In: "query", Type: "string", Desc: "Company name."},
+			{Name: "employment_type", In: "query", Type: "string", Desc: "e.g. FULL_TIME."},
+			{Name: "industry", In: "query", Type: "string", Desc: "Industry."},
+			{Name: "count", In: "query", Type: "integer", Desc: "Items to return (default 25)."},
+			{Name: "cursor", In: "query", Type: "string", Desc: "Pagination cursor."},
+		}), s.jobSearch),
+		with(route("GET", "/v1/jobs/locations", "Job location suggestions", []xapi.JobLocation{}, []openapi.Param{
+			{Name: "query", In: "query", Type: "string", Desc: "Location query."},
+		}), s.jobLocations),
+		with(route("GET", "/v1/jobs/{id}", "Job details by id", xapi.Job{}, nil), s.jobDetails),
 		with(route("GET", "/v1/bookmarks/folders", "Bookmark folders (raw, account-scoped)", map[string]any{}, []openapi.Param{
 			{Name: "cursor", In: "query", Type: "string", Desc: "Pagination cursor."},
 		}), s.bookmarkFolders),
