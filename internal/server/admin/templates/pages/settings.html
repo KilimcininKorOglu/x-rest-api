@@ -19,6 +19,8 @@
     <input type="text" name="proxy" value="{{.Proxy}}" placeholder="http://user:pass@host:port">
     <label>User-Agent override</label>
     <input type="text" name="user_agent" value="{{.UserAgent}}" placeholder="leave empty for default Chrome UA">
+    <label>TLS client profile (e.g. chrome_146, chrome_133; leave empty for default)</label>
+    <input type="text" name="client_profile" value="{{.ClientProfile}}" placeholder="chrome_146">
     <label>x-client-transaction-id override (leave empty to auto-generate)</label>
     <input type="text" name="tx_id" value="{{.TxID}}">
 

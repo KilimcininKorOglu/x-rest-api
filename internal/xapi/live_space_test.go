@@ -17,7 +17,7 @@ func TestLiveSpaceStream(t *testing.T) {
 	if id == "" {
 		t.Skip("set X_LIVE_SPACE_ID to a currently-live Space id")
 	}
-	sess, err := NewSession("", "", "")
+	sess, err := NewSession("", "", "", "")
 	if err != nil {
 		t.Fatalf("NewSession: %v", err)
 	}

@@ -9,7 +9,7 @@ import "testing"
 //	go test -tags live -run TestLiveJobs -count=1 -v ./internal/xapi/
 func TestLiveJobs(t *testing.T) {
 	acct := loadLiveAccount(t)
-	sess, err := NewSession("", "", "")
+	sess, err := NewSession("", "", "", "")
 	if err != nil {
 		t.Fatalf("NewSession: %v", err)
 	}

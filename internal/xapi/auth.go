@@ -20,11 +20,19 @@ const bearer = "AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs=" +
 const defaultUA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
 	"(KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36"
 
-// clientProfile pins a concrete Chrome TLS profile so the TLS/HTTP2 fingerprint
-// stays stable and matches a browser. Older profiles (chrome_124) are blocked by
-// Cloudflare on the by-rest-id user lookups, so keep it current.
-func clientProfile() profiles.ClientProfile {
-	if p, ok := profiles.MappedTLSClients["chrome_146"]; ok {
+// defaultProfile is the TLS profile used when the client_profile setting is empty.
+// Older profiles (chrome_124) are blocked by Cloudflare on the by-rest-id user
+// lookups, so keep this current.
+const defaultProfile = "chrome_146"
+
+// clientProfile resolves a tls-client profile by name (e.g. "chrome_146"), so the
+// TLS/HTTP2 fingerprint stays browser-like. An empty name uses defaultProfile; an
+// unknown name falls back to the library default.
+func clientProfile(name string) profiles.ClientProfile {
+	if name == "" {
+		name = defaultProfile
+	}
+	if p, ok := profiles.MappedTLSClients[name]; ok {
 		return p
 	}
 	return profiles.DefaultClientProfile
@@ -93,7 +101,7 @@ func (s *Session) featuresFor(op string, base map[string]any) map[string]any {
 
 // NewSession builds the shared transport. proxy, userAgent and txID may be empty
 // (they come from the settings table).
-func NewSession(userAgent, proxy, txID string) (*Session, error) {
+func NewSession(userAgent, proxy, txID, profile string) (*Session, error) {
 	if userAgent == "" {
 		userAgent = defaultUA
 	}
@@ -101,7 +109,7 @@ func NewSession(userAgent, proxy, txID string) (*Session, error) {
 		// 60s (not 30s) so Grok's streamed reasoning replies finish; ordinary ops
 		// return in under two seconds, so the higher ceiling never delays them.
 		tls_client.WithTimeoutSeconds(60),
-		tls_client.WithClientProfile(clientProfile()),
+		tls_client.WithClientProfile(clientProfile(profile)),
 		tls_client.WithCookieJar(tls_client.NewCookieJar()),
 	}
 	if proxy != "" {

@@ -105,7 +105,8 @@ func newSession(st *store.Store) (*xapi.Session, error) {
 	ua, _ := st.GetSetting(store.SettingUserAgent, "")
 	proxy, _ := st.GetSetting(store.SettingProxy, "")
 	txID, _ := st.GetSetting(store.SettingTxID, "")
-	return xapi.NewSession(ua, proxy, txID)
+	profile, _ := st.GetSetting(store.SettingClientProfile, "")
+	return xapi.NewSession(ua, proxy, txID, profile)
 }
 
 // retentionLoop periodically prunes old request logs per the retention setting.

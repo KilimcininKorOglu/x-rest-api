@@ -206,6 +206,7 @@ func (h *Handler) settingsPage(w http.ResponseWriter, r *http.Request) {
 		"DailyLimit":     h.st.GetSettingInt(store.SettingDailyRequestLimit, 0),
 		"Proxy":          must(h.st.GetSetting(store.SettingProxy, "")),
 		"UserAgent":      must(h.st.GetSetting(store.SettingUserAgent, "")),
+		"ClientProfile":  must(h.st.GetSetting(store.SettingClientProfile, "")),
 		"TxID":           must(h.st.GetSetting(store.SettingTxID, "")),
 	})
 }
@@ -225,6 +226,7 @@ func (h *Handler) settingsSave(w http.ResponseWriter, r *http.Request) {
 	_ = h.st.SetSetting(store.SettingDailyRequestLimit, strconv.Itoa(atoi(r.FormValue("daily_request_limit"))))
 	_ = h.st.SetSetting(store.SettingProxy, r.FormValue("proxy"))
 	_ = h.st.SetSetting(store.SettingUserAgent, r.FormValue("user_agent"))
+	_ = h.st.SetSetting(store.SettingClientProfile, r.FormValue("client_profile"))
 	_ = h.st.SetSetting(store.SettingTxID, r.FormValue("tx_id"))
 	setFlash(w, "ok", "settings saved (transport changes apply on restart)")
 	http.Redirect(w, r, "/admin/settings", http.StatusFound)

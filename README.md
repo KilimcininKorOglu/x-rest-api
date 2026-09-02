@@ -220,9 +220,11 @@ open http://localhost:8430/docs
   introduced that `ops.json` lacks (defaulted off), which clears stale-features
   (code 336) errors caused by a new flag.
 - **Settings** — toggle writes, the public no-auth fallback, log retention, the
-  per-account daily request cap, and transport (proxy / User-Agent /
-  `x-client-transaction-id` override). Transport changes apply on restart; writes,
-  fallback, daily cap, accounts and keys apply live.
+  per-account daily request cap, and transport (proxy / User-Agent / TLS client
+  profile / `x-client-transaction-id` override). The TLS client profile (e.g.
+  `chrome_146`) sets the browser fingerprint; bump it if x.com starts returning
+  Cloudflare 403 blocks. Transport changes apply on restart; writes, fallback,
+  daily cap, accounts and keys apply live.
 
 ## Public no-auth fallback (optional)
 

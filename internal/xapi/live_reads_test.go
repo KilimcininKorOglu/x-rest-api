@@ -29,7 +29,7 @@ func findFolderID(raw map[string]any) string {
 //	go test -tags live -run TestLiveReads -count=1 -v ./internal/xapi/
 func TestLiveReads(t *testing.T) {
 	acct := loadLiveAccount(t)
-	sess, err := NewSession("", "", "")
+	sess, err := NewSession("", "", "", "")
 	if err != nil {
 		t.Fatalf("NewSession: %v", err)
 	}

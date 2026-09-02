@@ -10,6 +10,7 @@ import (
 const (
 	SettingProxy          = "proxy"
 	SettingUserAgent      = "user_agent"
+	SettingClientProfile  = "client_profile"
 	SettingTxID           = "tx_id"
 	SettingEnableWrites   = "enable_writes"
 	SettingLogRetention   = "log_retention_days"
