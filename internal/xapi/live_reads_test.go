@@ -25,7 +25,8 @@ func findFolderID(raw map[string]any) string {
 // targets (jack / tweet 20 / "twitter"). It never fails on an upstream error;
 // it logs ok/err/count per op and a final tally, so one run shows exactly which
 // endpoints work live. Run with:
-//   go test -tags live -run TestLiveReads -count=1 -v ./internal/xapi/
+//
+//	go test -tags live -run TestLiveReads -count=1 -v ./internal/xapi/
 func TestLiveReads(t *testing.T) {
 	acct := loadLiveAccount(t)
 	sess, err := NewSession("", "", "")
