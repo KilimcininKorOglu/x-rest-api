@@ -39,6 +39,7 @@ type XUser struct {
 // card) are omitempty so a bare post stays compact.
 type Tweet struct {
 	RestID              string       `json:"rest_id"`
+	AuthorID            string       `json:"author_id,omitempty"`
 	UserScreenName      string       `json:"user_screen_name"`
 	UserName            string       `json:"user_name"`
 	CreatedAt           string       `json:"created_at"`
@@ -54,6 +55,7 @@ type Tweet struct {
 	IsQuote             bool         `json:"is_quote"`
 	ConversationID      string       `json:"conversation_id,omitempty"`
 	InReplyToTweetID    string       `json:"in_reply_to_tweet_id,omitempty"`
+	InReplyToUserID     string       `json:"in_reply_to_user_id,omitempty"`
 	InReplyToScreenName string       `json:"in_reply_to_screen_name,omitempty"`
 	Source              string       `json:"source,omitempty"`
 	Hashtags            []string     `json:"hashtags,omitempty"`

@@ -243,6 +243,7 @@ func parseTweetDepth(result map[string]any, depth int) *Tweet {
 	quote, _ := legacy["is_quote_status"].(bool)
 	tw := &Tweet{
 		RestID:              restID,
+		AuthorID:            asString(dig(t, "core", "user_results", "result", "rest_id")),
 		UserScreenName:      screenName,
 		UserName:            name,
 		CreatedAt:           asString(legacy["created_at"]),
@@ -258,6 +259,7 @@ func parseTweetDepth(result map[string]any, depth int) *Tweet {
 		IsQuote:             quote,
 		ConversationID:      asString(legacy["conversation_id_str"]),
 		InReplyToTweetID:    asString(legacy["in_reply_to_status_id_str"]),
+		InReplyToUserID:     asString(legacy["in_reply_to_user_id_str"]),
 		InReplyToScreenName: asString(legacy["in_reply_to_screen_name"]),
 		Source:              sourceLabel(asString(t["source"])),
 		Hashtags:            hashtags(legacy, "hashtags"),
