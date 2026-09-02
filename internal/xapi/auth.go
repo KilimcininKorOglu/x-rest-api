@@ -18,12 +18,13 @@ const bearer = "AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs=" +
 
 // defaultUA matches the pinned browser fingerprint below.
 const defaultUA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
-	"(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+	"(KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36"
 
 // clientProfile pins a concrete Chrome TLS profile so the TLS/HTTP2 fingerprint
-// stays stable and matches a browser, replacing curl_cffi's impersonate="chrome124".
+// stays stable and matches a browser. Older profiles (chrome_124) are blocked by
+// Cloudflare on the by-rest-id user lookups, so keep it current.
 func clientProfile() profiles.ClientProfile {
-	if p, ok := profiles.MappedTLSClients["chrome_124"]; ok {
+	if p, ok := profiles.MappedTLSClients["chrome_146"]; ok {
 		return p
 	}
 	return profiles.DefaultClientProfile
