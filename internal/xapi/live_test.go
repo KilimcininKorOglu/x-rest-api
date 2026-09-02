@@ -62,6 +62,28 @@ func TestLiveMedia(t *testing.T) {
 	t.Log("DeleteTweet: OK (cleaned up)")
 }
 
+// TestLiveRetweet reposts a permanent tweet, then removes the repost, verifying
+// the CreateRetweet queryId. Run with:
+//   go test -tags live -run TestLiveRetweet -count=1 -v ./internal/xapi/
+func TestLiveRetweet(t *testing.T) {
+	acct := loadLiveAccount(t)
+	sess, err := NewSession("", "", "")
+	if err != nil {
+		t.Fatalf("NewSession: %v", err)
+	}
+	c := NewClientFor(sess, acct)
+
+	id, err := c.CreateRetweet("20")
+	if err != nil {
+		t.Fatalf("CreateRetweet: %v", err)
+	}
+	t.Logf("CreateRetweet: rest_id=%s", id)
+	if err := c.DeleteRetweet("20"); err != nil {
+		t.Fatalf("DeleteRetweet: %v", err)
+	}
+	t.Log("DeleteRetweet: OK (cleaned up)")
+}
+
 // makePNG returns a small solid-color PNG for the media upload test.
 func makePNG() []byte {
 	img := image.NewRGBA(image.Rect(0, 0, 64, 64))
