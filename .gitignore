@@ -1,0 +1,24 @@
+# Secrets
+.env
+
+# Real account credential — NEVER commit
+cookie.txt
+
+# SQLite database (holds plaintext cookies/keys)
+/data/
+
+# Reference-only helper projects (separate modules, not part of this build)
+/helper-projects/
+
+# Playwright screenshots
+/.playwright-mcp/
+
+# Build output
+/bin/
+
+# Captured sessions (carry session cookies)
+*.har
+research/
+
+# OS
+.DS_Store

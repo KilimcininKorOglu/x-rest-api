@@ -1,0 +1,47 @@
+{{define "content"}}
+<h1>Request logs</h1>
+<div class="card">
+  <form hx-get="/admin/logs/table" hx-target="#logtable" hx-swap="innerHTML"
+        hx-trigger="submit, keyup changed delay:400ms from:input[name=path]">
+    <div class="row">
+      <div><label>Path contains</label><input type="text" name="path" value="{{.Filter.Path}}" placeholder="/v1/users"></div>
+    </div>
+  </form>
+</div>
+<div class="card"><div id="logtable">{{template "logstable" .}}</div></div>
+{{end}}
+
+{{define "logstable"}}
+<table>
+  <thead><tr>
+    <th>Time</th><th>Method</th><th>Path</th><th>Status</th><th>Upstream</th>
+    <th>ms</th><th>Account</th><th>Key</th><th>IP</th><th>Error</th>
+  </tr></thead>
+  <tbody>
+    {{range .Logs}}
+    <tr>
+      <td class="mono">{{ts .TS}}</td>
+      <td>{{.Method}}</td>
+      <td class="mono">{{.Path}}{{if .Query}}?{{.Query}}{{end}}</td>
+      <td class="status-{{statusClass .Status}}">{{.Status}}</td>
+      <td>{{if .UpstreamStatus}}{{deref .UpstreamStatus}}{{else}}-{{end}}</td>
+      <td>{{.DurationMS}}</td>
+      <td>{{index $.AccountLabels (did .AccountID)}}</td>
+      <td>{{index $.KeyNames (did .APIKeyID)}}</td>
+      <td class="mono">{{.RemoteIP}}</td>
+      <td class="muted">{{.Error}}</td>
+    </tr>
+    {{else}}
+    <tr><td colspan="10" class="muted">No matching requests.</td></tr>
+    {{end}}
+  </tbody>
+</table>
+<div class="actions" style="margin-top:12px">
+  {{if gt .Filter.Offset 0}}
+  <button class="ghost" hx-get="/admin/logs/table?path={{.Filter.Path}}&offset={{.PrevOffset}}" hx-target="#logtable" hx-swap="innerHTML">Prev</button>
+  {{end}}
+  {{if .HasNext}}
+  <button class="ghost" hx-get="/admin/logs/table?path={{.Filter.Path}}&offset={{.NextOffset}}" hx-target="#logtable" hx-swap="innerHTML">Next</button>
+  {{end}}
+</div>
+{{end}}

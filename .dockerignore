@@ -1,0 +1,11 @@
+.env
+bin/
+*.har
+research/
+.git
+.DS_Store
+README.md
+helper-projects/
+cookie.txt
+data/
+.playwright-mcp/

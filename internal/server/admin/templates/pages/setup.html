@@ -1,0 +1,17 @@
+{{define "content"}}
+<div class="center">
+  <div class="card auth-card">
+    <h1>Initial setup</h1>
+    <p class="muted">No admin exists yet. Create the first admin account.</p>
+    <form method="post" action="/admin/setup">
+      <label>Username</label>
+      <input type="text" name="username" autocomplete="username" required autofocus>
+      <label>Password</label>
+      <input type="password" name="password" autocomplete="new-password" required>
+      <label>Confirm password</label>
+      <input type="password" name="password2" autocomplete="new-password" required>
+      <div style="margin-top:16px"><button type="submit">Create admin</button></div>
+    </form>
+  </div>
+</div>
+{{end}}

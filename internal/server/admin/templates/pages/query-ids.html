@@ -1,0 +1,32 @@
+{{define "content"}}
+<h1>Query IDs</h1>
+<div class="card">
+  <p class="muted">
+    x.com rotates each operation's <span class="mono">queryId</span> on web releases.
+    Refresh pulls the live values from the x.com client bundle and overrides the
+    embedded defaults. The <span class="mono">features</span> and
+    <span class="mono">variables</span> stay from <span class="mono">ops.json</span>.
+  </p>
+  <form method="post" action="/admin/query-ids/refresh">
+    <button type="submit">Refresh from x.com</button>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Overrides in effect</h2>
+  <table>
+    <thead><tr><th>Operation</th><th>queryId</th><th>Updated</th></tr></thead>
+    <tbody>
+      {{range .QueryIDs}}
+      <tr>
+        <td>{{.Operation}}</td>
+        <td class="mono">{{.QueryID}}</td>
+        <td class="mono">{{ts .UpdatedAt}}</td>
+      </tr>
+      {{else}}
+      <tr><td colspan="3" class="muted">No overrides yet. Embedded ops.json queryIds are in use. Click Refresh to pull live values.</td></tr>
+      {{end}}
+    </tbody>
+  </table>
+</div>
+{{end}}

@@ -1,0 +1,30 @@
+{{define "layout"}}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.Title}} · x-rest-api</title>
+  <link rel="stylesheet" href="/admin/static/styles.css">
+  <script src="/admin/static/htmx.min.js"></script>
+</head>
+<body>
+{{if .Nav}}
+<header class="topbar">
+  <span class="brand">x-rest-api</span>
+  <nav>
+    <a href="/admin" class="{{if eq .Active "dashboard"}}active{{end}}">Dashboard</a>
+    <a href="/admin/accounts" class="{{if eq .Active "accounts"}}active{{end}}">Accounts</a>
+    <a href="/admin/keys" class="{{if eq .Active "keys"}}active{{end}}">API Keys</a>
+    <a href="/admin/logs" class="{{if eq .Active "logs"}}active{{end}}">Logs</a>
+    <a href="/admin/query-ids" class="{{if eq .Active "queryids"}}active{{end}}">Query IDs</a>
+    <a href="/admin/settings" class="{{if eq .Active "settings"}}active{{end}}">Settings</a>
+  </nav>
+  <a class="btn ghost" href="/admin/logout">Logout</a>
+</header>
+{{end}}
+<main>
+  {{if .Flash}}<div class="flash {{.Flash.Type}}">{{.Flash.Msg}}</div>{{end}}
+  {{template "content" .}}
+</main>
+</body>
+</html>{{end}}

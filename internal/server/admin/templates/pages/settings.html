@@ -1,0 +1,28 @@
+{{define "content"}}
+<h1>Settings</h1>
+<div class="card">
+  <form method="post" action="/admin/settings">
+    <label><input type="checkbox" name="enable_writes" {{if .EnableWrites}}checked{{end}}> Enable write mutations (posts/likes/reposts)</label>
+    <p class="muted">Applies immediately. Writes still require a key with write permission and a specific account.</p>
+
+    <label><input type="checkbox" name="enable_public_fallback" {{if .PublicFallback}}checked{{end}}> Enable public no-auth fallback (FxTwitter)</label>
+    <p class="muted">When all accounts are exhausted or rejected, single-tweet and profile reads fall back to api.fxtwitter.com. This leaks the queried id/handle to a third party.</p>
+
+    <label>Log retention (days, 0 = keep forever)</label>
+    <input type="number" name="log_retention_days" min="0" value="{{.LogRetention}}">
+
+    <label>Daily request cap per account (0 = unlimited)</label>
+    <input type="number" name="daily_request_limit" min="0" value="{{.DailyLimit}}">
+
+    <h2>Upstream transport <span class="muted">(applied on restart)</span></h2>
+    <label>Proxy URL</label>
+    <input type="text" name="proxy" value="{{.Proxy}}" placeholder="http://user:pass@host:port">
+    <label>User-Agent override</label>
+    <input type="text" name="user_agent" value="{{.UserAgent}}" placeholder="leave empty for default Chrome UA">
+    <label>x-client-transaction-id override (leave empty to auto-generate)</label>
+    <input type="text" name="tx_id" value="{{.TxID}}">
+
+    <div style="margin-top:16px"><button type="submit">Save settings</button></div>
+  </form>
+</div>
+{{end}}

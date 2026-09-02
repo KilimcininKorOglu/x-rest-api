@@ -1,0 +1,30 @@
+{{define "content"}}
+<h1>Dashboard</h1>
+<div class="grid">
+  <div class="stat"><div class="n">{{.Stats.Accounts}}</div><div class="l">Accounts</div></div>
+  <div class="stat"><div class="n">{{.Stats.Available}}</div><div class="l">Available now</div></div>
+  <div class="stat"><div class="n">{{.Stats.Keys}}</div><div class="l">API Keys</div></div>
+  <div class="stat"><div class="n">{{.Stats.Requests}}</div><div class="l">Logged requests</div></div>
+</div>
+
+<h2>Recent requests</h2>
+<div class="card">
+  <table>
+    <thead><tr><th>Time</th><th>Method</th><th>Path</th><th>Status</th><th>ms</th><th>Account</th></tr></thead>
+    <tbody>
+      {{range .Recent}}
+      <tr>
+        <td class="mono">{{ts .TS}}</td>
+        <td>{{.Method}}</td>
+        <td class="mono">{{.Path}}</td>
+        <td class="status-{{statusClass .Status}}">{{.Status}}</td>
+        <td>{{.DurationMS}}</td>
+        <td>{{index $.AccountLabels (did .AccountID)}}</td>
+      </tr>
+      {{else}}
+      <tr><td colspan="6" class="muted">No requests yet.</td></tr>
+      {{end}}
+    </tbody>
+  </table>
+</div>
+{{end}}
