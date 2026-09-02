@@ -164,6 +164,8 @@ specific account):
 | `DELETE /v1/tweets/{id}/bookmark` | none | remove a bookmark |
 | `POST /v1/users/{handle}/follow` | none | follow a user |
 | `DELETE /v1/users/{handle}/follow` | none | unfollow a user |
+| `POST /v1/users/{handle}/mute` | none | mute a user (hides their posts) |
+| `DELETE /v1/users/{handle}/mute` | none | unmute a user |
 | `GET /v1/scheduled` | none | your scheduled (unsent) tweets (account-scoped) |
 | `POST /v1/scheduled` | `{"text": "...", "execute_at": <unix>}` | schedule a tweet for a future time |
 | `DELETE /v1/scheduled/{id}` | none | cancel a scheduled tweet |

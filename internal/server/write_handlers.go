@@ -163,6 +163,14 @@ func (s *Server) unfollowUser(w http.ResponseWriter, r *http.Request) {
 	s.actWriteHandle(w, r, "UnfollowUser", "unfollowed", (*xapi.XClient).Unfollow)
 }
 
+func (s *Server) muteUser(w http.ResponseWriter, r *http.Request) {
+	s.actWriteHandle(w, r, "MuteUser", "muted", (*xapi.XClient).Mute)
+}
+
+func (s *Server) unmuteUser(w http.ResponseWriter, r *http.Request) {
+	s.actWriteHandle(w, r, "UnmuteUser", "unmuted", (*xapi.XClient).Unmute)
+}
+
 func (s *Server) deleteTweet(w http.ResponseWriter, r *http.Request) {
 	s.actWrite(w, r, "DeleteTweet", "deleted", (*xapi.XClient).DeleteTweet)
 }

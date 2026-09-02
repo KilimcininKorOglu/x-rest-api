@@ -320,6 +320,27 @@ func (c *XClient) Unfollow(handleOrID string) error {
 	return err
 }
 
+// Mute mutes a user by @handle or numeric id (REST 1.1 mutes/users/create). A
+// mute hides the target's posts from the account without unfollowing them.
+func (c *XClient) Mute(handleOrID string) error {
+	uid, err := c.resolveUID(handleOrID)
+	if err != nil {
+		return err
+	}
+	_, err = c.callForm("MuteUser", "https://x.com/i/api/1.1/mutes/users/create.json", url.Values{"user_id": {uid}})
+	return err
+}
+
+// Unmute reverses Mute by @handle or numeric id (REST 1.1 mutes/users/destroy).
+func (c *XClient) Unmute(handleOrID string) error {
+	uid, err := c.resolveUID(handleOrID)
+	if err != nil {
+		return err
+	}
+	_, err = c.callForm("UnmuteUser", "https://x.com/i/api/1.1/mutes/users/destroy.json", url.Values{"user_id": {uid}})
+	return err
+}
+
 // ---------------------------- tweet timelines --------------------------- //
 
 func (c *XClient) userTimeline(op, handle string, count int, cursor string) ([]Tweet, string, error) {
