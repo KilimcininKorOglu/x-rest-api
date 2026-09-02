@@ -351,6 +351,7 @@ func (s *Server) Routes(admin http.Handler) http.Handler {
 
 	r.Get("/health", s.health)
 	r.Get("/openapi.json", s.openapiJSON)
+	r.Get("/openapi-v2.json", s.openapiV2JSON)
 	r.Get("/docs", s.docsUI)
 	r.Handle("/docs-static/*", http.StripPrefix("/docs-static/", docsStatic()))
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
