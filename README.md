@@ -97,6 +97,7 @@ failure is `{"error": {"message": ...}}`. Every `/v1` route needs the Bearer key
 | `/v1/lists/{id}/rss` | list timeline as an RSS 2.0 feed |
 | `/v1/lists/{id}/members` | list members |
 | `/v1/spaces/{id}` | Space info by id (raw GQL) |
+| `/v1/spaces/{id}/stream` | a Space's live stream status (playback source, share url) |
 | `/v1/notifications` | notifications timeline (raw GQL, account-scoped) |
 | `/v1/bookmarks/folders` | bookmark folders (raw GQL, account-scoped) |
 | `/v1/bookmarks/folders/{id}` | tweets in a bookmark folder (account-scoped) |

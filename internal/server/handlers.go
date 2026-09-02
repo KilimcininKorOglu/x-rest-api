@@ -789,6 +789,16 @@ func (s *Server) spaceInfo(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// spaceStream returns a Space's live stream status (playback source, share url),
+// resolved from the Space's media key. The {id} is the Space's base-encoded id.
+func (s *Server) spaceStream(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	s.serveRead(w, r, false, "LiveVideoStreamStatus", func(c *xapi.XClient) (any, string, error) {
+		st, err := c.SpaceStreamStatus(id)
+		return st, "", err
+	})
+}
+
 // bookmarkFolders returns the raw BookmarkFoldersSlice result (the account's
 // bookmark folders). Account-scoped, so it needs a specific account.
 func (s *Server) bookmarkFolders(w http.ResponseWriter, r *http.Request) {

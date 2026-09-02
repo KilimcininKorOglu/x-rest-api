@@ -278,3 +278,22 @@ type List struct {
 	IsMember        bool   `json:"is_member"`
 	Private         bool   `json:"private"`
 }
+
+// LiveStreamSource is the playback source of a Space's live audio/video stream.
+type LiveStreamSource struct {
+	Location              string `json:"location,omitempty"`
+	NoRedirectPlaybackURL string `json:"no_redirect_playback_url,omitempty"`
+	Status                string `json:"status,omitempty"`
+	StreamType            string `json:"stream_type,omitempty"`
+}
+
+// LiveStreamStatus is a Space's live stream status, resolved from its media key.
+type LiveStreamStatus struct {
+	Source             *LiveStreamSource `json:"source,omitempty"`
+	SessionID          string            `json:"session_id,omitempty"`
+	ChatToken          string            `json:"chat_token,omitempty"`
+	LifecycleToken     string            `json:"lifecycle_token,omitempty"`
+	ShareURL           string            `json:"share_url,omitempty"`
+	ChatPermissionType string            `json:"chat_permission_type,omitempty"`
+	MediaKey           string            `json:"media_key,omitempty"`
+}
