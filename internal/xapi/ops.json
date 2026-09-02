@@ -2063,5 +2063,13 @@
 			"query": ""
 		},
 		"features": {}
+	},
+	"RemoveFollower": {
+		"queryId": "QpNfg0kpPRfjROQ_9eOLXA",
+		"method": "POST",
+		"variables": {
+			"target_user_id": ""
+		},
+		"features": {}
 	}
 }

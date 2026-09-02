@@ -298,6 +298,154 @@ func (s *Server) deleteConversation(w http.ResponseWriter, r *http.Request) {
 	s.actWrite(w, r, "DMDeleteConversation", "deleted", (*xapi.XClient).DeleteConversation)
 }
 
+// usernameBody is the JSON body for POST /v1/account/username.
+type usernameBody struct {
+	Username string `json:"username"`
+}
+
+// updateProfileBody is the JSON body for PATCH /v1/account/profile; nil fields
+// are left unchanged.
+type updateProfileBody struct {
+	Name        *string `json:"name"`
+	URL         *string `json:"url"`
+	Location    *string `json:"location"`
+	Description *string `json:"description"`
+}
+
+// imageBody / bannerBody carry a base64-encoded image.
+type imageBody struct {
+	ImageBase64 string `json:"image_base64"`
+}
+type bannerBody struct {
+	BannerBase64 string `json:"banner_base64"`
+}
+
+// passwordBody is the JSON body for POST /v1/account/password.
+type passwordBody struct {
+	CurrentPassword string `json:"current_password"`
+	NewPassword     string `json:"new_password"`
+}
+
+func (s *Server) removeFollower(w http.ResponseWriter, r *http.Request) {
+	s.actWriteHandle(w, r, "RemoveFollower", "removed", (*xapi.XClient).RemoveFollower)
+}
+
+func (s *Server) changeUsername(w http.ResponseWriter, r *http.Request) {
+	var body usernameBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	if body.Username == "" {
+		writeError(w, http.StatusBadRequest, "provide username")
+		return
+	}
+	acct, ok := s.writeGuard(w, r, "ChangeUsername")
+	if !ok {
+		return
+	}
+	cli := s.clientFor(acct)
+	err := cli.ChangeUsername(body.Username)
+	s.pool.Observe(acct.ID, "ChangeUsername", cli.RateLimit())
+	if err != nil {
+		s.failWrite(w, r, acct.ID, "ChangeUsername", err)
+		return
+	}
+	writeData(w, map[string]string{"status": "username changed"})
+}
+
+func (s *Server) updateProfile(w http.ResponseWriter, r *http.Request) {
+	var body updateProfileBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	acct, ok := s.writeGuard(w, r, "UpdateProfile")
+	if !ok {
+		return
+	}
+	cli := s.clientFor(acct)
+	err := cli.UpdateProfile(body.Name, body.URL, body.Location, body.Description)
+	s.pool.Observe(acct.ID, "UpdateProfile", cli.RateLimit())
+	if err != nil {
+		s.failWrite(w, r, acct.ID, "UpdateProfile", err)
+		return
+	}
+	writeData(w, map[string]string{"status": "profile updated"})
+}
+
+func (s *Server) updateProfileImage(w http.ResponseWriter, r *http.Request) {
+	var body imageBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	if body.ImageBase64 == "" {
+		writeError(w, http.StatusBadRequest, "provide image_base64")
+		return
+	}
+	acct, ok := s.writeGuard(w, r, "UpdateProfileImage")
+	if !ok {
+		return
+	}
+	cli := s.clientFor(acct)
+	err := cli.UpdateProfileImage(body.ImageBase64)
+	s.pool.Observe(acct.ID, "UpdateProfileImage", cli.RateLimit())
+	if err != nil {
+		s.failWrite(w, r, acct.ID, "UpdateProfileImage", err)
+		return
+	}
+	writeData(w, map[string]string{"status": "image updated"})
+}
+
+func (s *Server) updateProfileBanner(w http.ResponseWriter, r *http.Request) {
+	var body bannerBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	if body.BannerBase64 == "" {
+		writeError(w, http.StatusBadRequest, "provide banner_base64")
+		return
+	}
+	acct, ok := s.writeGuard(w, r, "UpdateProfileBanner")
+	if !ok {
+		return
+	}
+	cli := s.clientFor(acct)
+	err := cli.UpdateProfileBanner(body.BannerBase64)
+	s.pool.Observe(acct.ID, "UpdateProfileBanner", cli.RateLimit())
+	if err != nil {
+		s.failWrite(w, r, acct.ID, "UpdateProfileBanner", err)
+		return
+	}
+	writeData(w, map[string]string{"status": "banner updated"})
+}
+
+func (s *Server) changePassword(w http.ResponseWriter, r *http.Request) {
+	var body passwordBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	if body.CurrentPassword == "" || body.NewPassword == "" {
+		writeError(w, http.StatusBadRequest, "provide current_password and new_password")
+		return
+	}
+	acct, ok := s.writeGuard(w, r, "ChangePassword")
+	if !ok {
+		return
+	}
+	cli := s.clientFor(acct)
+	err := cli.ChangePassword(body.CurrentPassword, body.NewPassword)
+	s.pool.Observe(acct.ID, "ChangePassword", cli.RateLimit())
+	if err != nil {
+		s.failWrite(w, r, acct.ID, "ChangePassword", err)
+		return
+	}
+	writeData(w, map[string]string{"status": "password changed; re-capture ct0/auth_token if the session rotated"})
+}
+
 func (s *Server) unmuteList(w http.ResponseWriter, r *http.Request) {
 	s.actWrite(w, r, "UnmuteList", "unmuted", (*xapi.XClient).UnmuteList)
 }

@@ -133,6 +133,16 @@ func (c *XClient) DeleteScheduledTweet(id string) error {
 	return err
 }
 
+// RemoveFollower forces a user to stop following the authenticated account.
+func (c *XClient) RemoveFollower(handleOrID string) error {
+	uid, err := c.resolveUID(handleOrID)
+	if err != nil {
+		return err
+	}
+	_, err = c.call("RemoveFollower", map[string]any{"target_user_id": uid})
+	return err
+}
+
 // CreateList creates a list and returns its id.
 func (c *XClient) CreateList(name, description string, isPrivate bool) (string, error) {
 	payload, err := c.call("CreateList", map[string]any{
