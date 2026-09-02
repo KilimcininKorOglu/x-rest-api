@@ -158,9 +158,27 @@ func v2Paths(idParam map[string]any) map[string]any {
 		"/2/users/{id}/likes/{tweet_id}":           map[string]any{"delete": v2WriteOp("Unlike a tweet", false, idParam, v2PathParam("tweet_id", "The liked tweet id."))},
 		"/2/users/{id}/retweets":                   map[string]any{"post": v2WriteOp("Retweet a tweet", true, idParam)},
 		"/2/users/{id}/retweets/{source_tweet_id}": map[string]any{"delete": v2WriteOp("Undo a retweet", false, idParam, v2PathParam("source_tweet_id", "The retweeted tweet id."))},
-		"/2/users/{id}/following":                  map[string]any{"post": v2WriteOp("Follow a user", true, idParam)},
-		"/2/users/{id}/following/{target_id}":      map[string]any{"delete": v2WriteOp("Unfollow a user", false, idParam, v2PathParam("target_id", "The followed user id."))},
+		"/2/users/{id}/following": map[string]any{
+			"get":  v2ListOp("Who a user follows", idParam),
+			"post": v2WriteOp("Follow a user", true, idParam),
+		},
+		"/2/users/{id}/following/{target_id}":           map[string]any{"delete": v2WriteOp("Unfollow a user", false, idParam, v2PathParam("target_id", "The followed user id."))},
+		"/2/tweets/{id}/retweeted_by":                   map[string]any{"get": v2ListOp("Users who retweeted a tweet", idParam)},
+		"/2/tweets/{id}/liking_users":                   map[string]any{"get": v2ListOp("Users who liked a tweet", idParam)},
+		"/2/users/{id}/liked_tweets":                    map[string]any{"get": v2ListOp("Tweets a user liked", idParam)},
+		"/2/users/{id}/followers":                       map[string]any{"get": v2ListOp("A user's followers", idParam)},
+		"/2/users/{id}/timelines/reverse_chronological": map[string]any{"get": v2ListOp("The account's home timeline", idParam)},
 	}
+}
+
+// v2ListOp builds a paginated GET operation: v2Op plus the shared max_results/
+// pagination_token query parameters.
+func v2ListOp(summary string, pathParams ...map[string]any) map[string]any {
+	page := []map[string]any{
+		v2QueryParam("max_results", "Page size, 5-100 (default 10)."),
+		v2QueryParam("pagination_token", "Cursor from a previous meta.next_token."),
+	}
+	return v2Op(summary, append(pathParams, page...)...)
 }
 
 // v2Components builds the reusable schema and security components.

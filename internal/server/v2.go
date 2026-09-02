@@ -95,6 +95,51 @@ func (s *Server) failPickV2(w http.ResponseWriter, r *http.Request, err error) {
 	writeJSON(w, http.StatusServiceUnavailable, apiv2.Invalid("", err.Error()))
 }
 
+// v2TweetsPage runs a paginated tweet-list read and writes the v2 envelope with
+// meta (result_count + next_token), sharing the field/expansion engine. It reads
+// max_results and pagination_token from the query.
+func (s *Server) v2TweetsPage(w http.ResponseWriter, r *http.Request, scoped bool, op string, fetch func(*xapi.XClient, int, string) ([]xapi.Tweet, string, error)) {
+	sel := apiv2.ParseSelection(r.URL.Query())
+	max := v2MaxResults(r)
+	token := r.URL.Query().Get("pagination_token")
+	s.serveV2(w, r, scoped, op, func(c *xapi.XClient) (apiv2.Envelope, error) {
+		tws, next, err := fetch(c, max, token)
+		if err != nil {
+			return apiv2.Envelope{}, err
+		}
+		env, err := apiv2.TweetsEnvelope(c, tws, sel, true)
+		if err != nil {
+			return apiv2.Envelope{}, err
+		}
+		if env.Meta != nil {
+			env.Meta.NextToken = next
+		}
+		return env, nil
+	})
+}
+
+// v2UsersPage runs a paginated user-list read and writes the v2 envelope with meta,
+// mirroring v2TweetsPage.
+func (s *Server) v2UsersPage(w http.ResponseWriter, r *http.Request, scoped bool, op string, fetch func(*xapi.XClient, int, string) ([]xapi.XUser, string, error)) {
+	sel := apiv2.ParseSelection(r.URL.Query())
+	max := v2MaxResults(r)
+	token := r.URL.Query().Get("pagination_token")
+	s.serveV2(w, r, scoped, op, func(c *xapi.XClient) (apiv2.Envelope, error) {
+		users, next, err := fetch(c, max, token)
+		if err != nil {
+			return apiv2.Envelope{}, err
+		}
+		env, err := apiv2.UsersEnvelope(c, users, sel, true)
+		if err != nil {
+			return apiv2.Envelope{}, err
+		}
+		if env.Meta != nil {
+			env.Meta.NextToken = next
+		}
+		return env, nil
+	})
+}
+
 // v2MaxResults reads the v2 max_results parameter, clamping to [v2MinMax, v2MaxMax]
 // with a v2DefaultMax default.
 func v2MaxResults(r *http.Request) int {

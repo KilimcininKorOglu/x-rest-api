@@ -18,8 +18,14 @@ func (s *Server) mountV2(v chi.Router) {
 	v.Get("/users", s.v2UsersByIDs)
 	v.Get("/users/{id}/tweets", s.v2UserTweets)
 	v.Get("/tweets/search/recent", s.v2SearchRecent)
+	v.Get("/tweets/{id}/retweeted_by", s.v2RetweetedBy)
+	v.Get("/tweets/{id}/liking_users", s.v2LikingUsers)
 	v.Get("/tweets/{id}", s.v2Tweet)
 	v.Get("/tweets", s.v2TweetsByIDs)
+	v.Get("/users/{id}/liked_tweets", s.v2LikedTweets)
+	v.Get("/users/{id}/followers", s.v2Followers)
+	v.Get("/users/{id}/following", s.v2FollowingList)
+	v.Get("/users/{id}/timelines/reverse_chronological", s.v2ReverseChronological)
 }
 
 // withMissing appends resource-not-found errors for requested ids/handles absent
@@ -185,25 +191,66 @@ func (s *Server) v2SearchRecent(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// v2UserTweets serves GET /2/users/{id}/tweets, the reverse-chronological author
-// timeline with v2 max_results/pagination_token paging.
+// v2UserTweets serves GET /2/users/{id}/tweets, the author timeline.
 func (s *Server) v2UserTweets(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-	sel := apiv2.ParseSelection(r.URL.Query())
-	max := v2MaxResults(r)
-	token := r.URL.Query().Get("pagination_token")
-	s.serveV2(w, r, false, "UserTweets", func(c *xapi.XClient) (apiv2.Envelope, error) {
-		tws, next, err := c.UserTweets(id, max, token)
-		if err != nil {
-			return apiv2.Envelope{}, err
-		}
-		env, err := apiv2.TweetsEnvelope(c, tws, sel, true)
-		if err != nil {
-			return apiv2.Envelope{}, err
-		}
-		if env.Meta != nil {
-			env.Meta.NextToken = next
-		}
-		return env, nil
-	})
+	s.v2TweetsPage(w, r, false, "UserTweets",
+		func(c *xapi.XClient, max int, cur string) ([]xapi.Tweet, string, error) {
+			return c.UserTweets(id, max, cur)
+		})
+}
+
+// v2RetweetedBy serves GET /2/tweets/{id}/retweeted_by.
+func (s *Server) v2RetweetedBy(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	s.v2UsersPage(w, r, false, "Retweeters",
+		func(c *xapi.XClient, max int, cur string) ([]xapi.XUser, string, error) {
+			return c.Retweeters(id, max, cur)
+		})
+}
+
+// v2LikingUsers serves GET /2/tweets/{id}/liking_users.
+func (s *Server) v2LikingUsers(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	s.v2UsersPage(w, r, false, "Favoriters",
+		func(c *xapi.XClient, max int, cur string) ([]xapi.XUser, string, error) {
+			return c.Favoriters(id, max, cur)
+		})
+}
+
+// v2LikedTweets serves GET /2/users/{id}/liked_tweets.
+func (s *Server) v2LikedTweets(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	s.v2TweetsPage(w, r, false, "Likes",
+		func(c *xapi.XClient, max int, cur string) ([]xapi.Tweet, string, error) {
+			return c.Likes(id, max, cur)
+		})
+}
+
+// v2Followers serves GET /2/users/{id}/followers.
+func (s *Server) v2Followers(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	s.v2UsersPage(w, r, false, "Followers",
+		func(c *xapi.XClient, max int, cur string) ([]xapi.XUser, string, error) {
+			return c.Followers(id, max, cur)
+		})
+}
+
+// v2FollowingList serves GET /2/users/{id}/following.
+func (s *Server) v2FollowingList(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	s.v2UsersPage(w, r, false, "Following",
+		func(c *xapi.XClient, max int, cur string) ([]xapi.XUser, string, error) {
+			return c.Following(id, max, cur)
+		})
+}
+
+// v2ReverseChronological serves GET /2/users/{id}/timelines/reverse_chronological,
+// the account's home timeline. It is account-scoped and ignores {id}, serving the
+// pinned account's own home feed.
+func (s *Server) v2ReverseChronological(w http.ResponseWriter, r *http.Request) {
+	s.v2TweetsPage(w, r, true, "HomeLatest",
+		func(c *xapi.XClient, max int, cur string) ([]xapi.Tweet, string, error) {
+			return c.HomeLatest(max, cur)
+		})
 }
