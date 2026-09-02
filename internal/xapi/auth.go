@@ -97,7 +97,9 @@ func NewSession(userAgent, proxy, txID string) (*Session, error) {
 		userAgent = defaultUA
 	}
 	opts := []tls_client.HttpClientOption{
-		tls_client.WithTimeoutSeconds(30),
+		// 60s (not 30s) so Grok's streamed reasoning replies finish; ordinary ops
+		// return in under two seconds, so the higher ceiling never delays them.
+		tls_client.WithTimeoutSeconds(60),
 		tls_client.WithClientProfile(clientProfile()),
 		tls_client.WithCookieJar(tls_client.NewCookieJar()),
 	}

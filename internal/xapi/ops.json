@@ -1950,6 +1950,12 @@
 		"variables": {},
 		"features": {}
 	},
+	"CreateGrokConversation": {
+		"queryId": "6cmfJY3d7EPWuCSXWrkOFg",
+		"method": "POST",
+		"variables": {},
+		"features": {}
+	},
 	"CreateList": {
 		"queryId": "4lSOF4GqldI-NbiFET4ofQ",
 		"method": "POST",

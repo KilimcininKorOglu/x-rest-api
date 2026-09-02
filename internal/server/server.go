@@ -289,6 +289,7 @@ func (s *Server) v1Routes() []apiRoute {
 		with(route("GET", "/v1/scheduled", "Your scheduled (unsent) tweets (raw, account-scoped)", map[string]any{}, nil), s.getScheduled),
 		writeRoute(route("POST", "/v1/scheduled", "Schedule a tweet for a future time", map[string]any{}, nil), scheduleTweetBody{}, 201, s.scheduleTweet),
 		writeRoute(route("DELETE", "/v1/scheduled/{id}", "Cancel a scheduled tweet", writeOK, nil), nil, 200, s.deleteScheduled),
+		writeRoute(route("POST", "/v1/grok/chat", "Chat with Grok (account-scoped)", xapi.GrokChatResponse{}, nil), grokChatBody{}, 200, s.grokChat),
 	}
 	return rs
 }

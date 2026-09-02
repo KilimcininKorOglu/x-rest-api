@@ -195,11 +195,12 @@ func (c *XClient) doForm(op string, req *http.Request) (map[string]any, error) {
 	return out, nil
 }
 
-// callJSONRaw sends an application/json POST to a legacy REST endpoint and returns
-// the raw body, reusing the session auth headers with content-type overridden in
-// place. Used by endpoints whose payload is a JSON object (DM send) or whose reply
-// is newline-delimited JSON chunks (Grok).
-func (c *XClient) callJSONRaw(op, apiURL string, payload any) ([]byte, error) {
+// callJSONRaw POSTs a JSON payload to a REST endpoint and returns the raw body,
+// reusing the session auth headers with the given content-type. Used by endpoints
+// whose payload is a JSON object (DM send) or whose reply is newline-delimited
+// JSON chunks (Grok). A non-empty txPath makes it attach x-client-transaction-id
+// derived from that path, which the grok.x.com API rejects a request without.
+func (c *XClient) callJSONRaw(op, apiURL, txPath, contentType string, payload any) ([]byte, error) {
 	b, err := json.Marshal(payload)
 	if err != nil {
 		return nil, fmt.Errorf("%s: marshal payload: %w", op, err)
@@ -208,14 +209,21 @@ func (c *XClient) callJSONRaw(op, apiURL string, payload any) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
-	req.Header = c.sess.headers(c.acct, "en", "")
-	req.Header["content-type"] = []string{"application/json"}
+	tx := ""
+	if txPath != "" {
+		if tx, err = c.sess.transactionID(http.MethodPost, txPath); err != nil {
+			return nil, fmt.Errorf("%s: %w", op, err)
+		}
+	}
+	req.Header = c.sess.headers(c.acct, "en", tx)
+	req.Header["content-type"] = []string{contentType}
 	return c.doRaw(op, req)
 }
 
-// callJSON is callJSONRaw with a single-object JSON reply decoded to a map.
+// callJSON is callJSONRaw (application/json, no transaction-id) with a single
+// JSON-object reply decoded to a map.
 func (c *XClient) callJSON(op, apiURL string, payload any) (map[string]any, error) {
-	body, err := c.callJSONRaw(op, apiURL, payload)
+	body, err := c.callJSONRaw(op, apiURL, "", "application/json", payload)
 	if err != nil {
 		return nil, err
 	}

@@ -306,6 +306,47 @@ func (s *Server) deleteConversation(w http.ResponseWriter, r *http.Request) {
 	s.actWrite(w, r, "DMDeleteConversation", "deleted", (*xapi.XClient).DeleteConversation)
 }
 
+// grokChatBody is the JSON body for POST /v1/grok/chat. conversation_id continues
+// an existing chat; omit it to start a new one. The flags default to true.
+type grokChatBody struct {
+	Messages            []xapi.GrokMessage `json:"messages"`
+	ConversationID      string             `json:"conversation_id"`
+	ReturnSearchResults *bool              `json:"return_search_results"`
+	ReturnCitations     *bool              `json:"return_citations"`
+}
+
+func (s *Server) grokChat(w http.ResponseWriter, r *http.Request) {
+	var body grokChatBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	if len(body.Messages) == 0 {
+		writeError(w, http.StatusBadRequest, "provide messages")
+		return
+	}
+	acct, ok := s.writeGuard(w, r, "GrokAddResponse")
+	if !ok {
+		return
+	}
+	cli := s.clientFor(acct)
+	res, err := cli.GrokChat(body.Messages, body.ConversationID, boolOr(body.ReturnSearchResults, true), boolOr(body.ReturnCitations, true))
+	s.pool.Observe(acct.ID, "GrokAddResponse", cli.RateLimit())
+	if err != nil {
+		s.failWrite(w, r, acct.ID, "GrokAddResponse", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"data": res})
+}
+
+// boolOr returns *p when set, else def.
+func boolOr(p *bool, def bool) bool {
+	if p != nil {
+		return *p
+	}
+	return def
+}
+
 // sendDMBody is the JSON body for POST /v1/dm/conversations/{id}/messages.
 type sendDMBody struct {
 	Text string `json:"text"`

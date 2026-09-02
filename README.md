@@ -169,6 +169,7 @@ specific account):
 | `GET /v1/scheduled` | none | your scheduled (unsent) tweets (account-scoped) |
 | `POST /v1/scheduled` | `{"text": "...", "execute_at": <unix>}` | schedule a tweet for a future time |
 | `DELETE /v1/scheduled/{id}` | none | cancel a scheduled tweet |
+| `POST /v1/grok/chat` | `{"messages": [{"role": "user", "content": "..."}], "conversation_id": "..."}` | chat with Grok; omit `conversation_id` to start a new chat |
 | `POST /v1/lists` | `{"name": "...", "description": "...", "is_private": false}` | create a list, returns `{"id": "..."}` |
 | `PATCH /v1/lists/{id}` | `{"name": "...", "description": "...", "is_private": true}` | update a list (omit fields to leave unchanged) |
 | `DELETE /v1/lists/{id}` | none | delete a list |
