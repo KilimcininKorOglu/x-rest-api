@@ -288,6 +288,21 @@ type List struct {
 	Private         bool   `json:"private"`
 }
 
+// Space is an Audio Space's metadata (AudioSpaceById). Timestamps are ms epoch as
+// x.com returns them; ended_at stays a string because x.com sends it as one.
+type Space struct {
+	ID               string   `json:"id"`
+	State            string   `json:"state"`
+	Title            string   `json:"title,omitempty"`
+	CreatorID        string   `json:"creator_id,omitempty"`
+	MediaKey         string   `json:"media_key,omitempty"`
+	CreatedAt        int64    `json:"created_at,omitempty"`
+	StartedAt        int64    `json:"started_at,omitempty"`
+	EndedAt          string   `json:"ended_at,omitempty"`
+	LiveListeners    int      `json:"live_listeners,omitempty"`
+	AdminScreenNames []string `json:"admin_screen_names,omitempty"`
+}
+
 // LiveStreamSource is the playback source of a Space's live audio/video stream.
 type LiveStreamSource struct {
 	Location              string `json:"location,omitempty"`

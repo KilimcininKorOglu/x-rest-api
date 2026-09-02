@@ -31,6 +31,20 @@ func (s *Server) mountV2(v chi.Router) {
 	v.Get("/lists/{id}/tweets", s.v2ListTweets)
 	v.Get("/lists/{id}/members", s.v2ListMembers)
 	v.Get("/dm_events", s.v2DMEvents)
+	v.Get("/spaces/{id}", s.v2Space)
+}
+
+// v2Space serves GET /2/spaces/{id}.
+func (s *Server) v2Space(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	sel := apiv2.ParseSelection(r.URL.Query())
+	s.serveV2(w, r, false, "AudioSpaceById", func(c *xapi.XClient) (apiv2.Envelope, error) {
+		sp, err := c.SpaceInfo(id)
+		if err != nil {
+			return apiv2.Envelope{}, err
+		}
+		return apiv2.Envelope{Data: apiv2.SpaceObject(*sp, sel)}, nil
+	})
 }
 
 // v2DMEvents serves GET /2/dm_events, the account's direct-message events. It is

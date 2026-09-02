@@ -48,6 +48,24 @@ func asInt(v any) int {
 	return 0
 }
 
+// asInt64 coerces a JSON value to int64, for ms-epoch timestamps that overflow a
+// 32-bit int.
+func asInt64(v any) int64 {
+	switch n := v.(type) {
+	case float64:
+		return int64(n)
+	case int64:
+		return n
+	case int:
+		return int64(n)
+	case string:
+		if i, err := strconv.ParseInt(n, 10, 64); err == nil {
+			return i
+		}
+	}
+	return 0
+}
+
 // asBool coerces a JSON value to bool (missing/other types yield false).
 func asBool(v any) bool {
 	b, _ := v.(bool)

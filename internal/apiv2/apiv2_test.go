@@ -224,6 +224,35 @@ func TestListObjectDefaultSet(t *testing.T) {
 	}
 }
 
+func TestSpaceObjectSelectedFields(t *testing.T) {
+	sp := xapi.Space{
+		ID: "1X", State: "TimedOut", Title: "hi", CreatorID: "9",
+		CreatedAt: 1788356176144, EndedAt: "1788370046348", LiveListeners: 415,
+	}
+	obj := SpaceObject(sp, parseFrom(t, "space.fields=title,creator_id,created_at,ended_at,participant_count,host_ids"))
+	if obj["id"] != "1X" || obj["state"] != "TimedOut" {
+		t.Fatalf("default space set wrong: %v", obj)
+	}
+	if obj["title"] != "hi" || obj["creator_id"] != "9" || obj["participant_count"] != 415 {
+		t.Errorf("selected space fields wrong: %v", obj)
+	}
+	if obj["created_at"] != "2026-09-02T13:36:16.144Z" {
+		t.Errorf("created_at ms->ISO wrong: %v", obj["created_at"])
+	}
+	hosts, ok := obj["host_ids"].([]string)
+	if !ok || len(hosts) != 1 || hosts[0] != "9" {
+		t.Errorf("host_ids wrong: %v", obj["host_ids"])
+	}
+}
+
+func TestSpaceObjectDefaultSet(t *testing.T) {
+	sp := xapi.Space{ID: "1", State: "Running", Title: "hidden"}
+	obj := SpaceObject(sp, parseFrom(t, ""))
+	if len(obj) != 2 || obj["id"] != "1" || obj["state"] != "Running" {
+		t.Errorf("default space set must be id+state only: %v", obj)
+	}
+}
+
 func TestNotFoundEnvelope(t *testing.T) {
 	env := NotFound("tweet", "id", "123")
 	if len(env.Errors) != 1 {

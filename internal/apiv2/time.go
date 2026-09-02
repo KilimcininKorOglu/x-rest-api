@@ -1,6 +1,9 @@
 package apiv2
 
-import "time"
+import (
+	"strconv"
+	"time"
+)
 
 // xLayout is the timestamp format x.com's GraphQL/legacy surface returns, e.g.
 // "Wed Oct 10 20:19:24 +0000 2018".
@@ -22,4 +25,26 @@ func toISO8601(x string) string {
 		return ""
 	}
 	return t.UTC().Format(v2Layout)
+}
+
+// msToISO converts a millisecond-epoch timestamp to the v2 ISO 8601 form. It
+// returns "" for a non-positive value, so an unset timestamp drops the field.
+func msToISO(ms int64) string {
+	if ms <= 0 {
+		return ""
+	}
+	return time.UnixMilli(ms).UTC().Format(v2Layout)
+}
+
+// msToISOString converts a millisecond-epoch timestamp held as a string, as x.com
+// sends a Space's ended_at.
+func msToISOString(s string) string {
+	if s == "" {
+		return ""
+	}
+	n, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		return ""
+	}
+	return msToISO(n)
 }

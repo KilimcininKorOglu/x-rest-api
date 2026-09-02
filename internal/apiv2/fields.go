@@ -15,6 +15,7 @@ type Selection struct {
 	Poll       map[string]bool
 	Place      map[string]bool
 	List       map[string]bool
+	Space      map[string]bool
 	Expansions map[string]bool
 }
 
@@ -28,6 +29,7 @@ var (
 	defaultPollFields  = []string{"id", "options"}
 	defaultPlaceFields = []string{"id", "full_name"}
 	defaultListFields  = []string{"id", "name"}
+	defaultSpaceFields = []string{"id", "state"}
 )
 
 // csvSet splits a comma-separated parameter into a set, seeded with the given
@@ -56,6 +58,7 @@ func ParseSelection(q url.Values) Selection {
 		Poll:       csvSet(q.Get("poll.fields"), defaultPollFields),
 		Place:      csvSet(q.Get("place.fields"), defaultPlaceFields),
 		List:       csvSet(q.Get("list.fields"), defaultListFields),
+		Space:      csvSet(q.Get("space.fields"), defaultSpaceFields),
 		Expansions: csvSet(q.Get("expansions"), nil),
 	}
 }

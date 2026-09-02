@@ -871,7 +871,11 @@ func (s *Server) communityTweets(w http.ResponseWriter, r *http.Request) {
 func (s *Server) spaceInfo(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	s.serveRead(w, r, false, "AudioSpaceById", func(c *xapi.XClient) (any, string, error) {
-		return rawByVars(c, "AudioSpaceById", map[string]any{"id": id}, "", 0)
+		if rawParam(r) {
+			return rawByVars(c, "AudioSpaceById", map[string]any{"id": id}, "", 0)
+		}
+		sp, err := c.SpaceInfo(id)
+		return sp, "", err
 	})
 }
 

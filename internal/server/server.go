@@ -235,7 +235,7 @@ func (s *Server) v1Routes() []apiRoute {
 			{Name: "count", In: "query", Type: "integer", Desc: "Items to return (default 40, max 200)."},
 			{Name: "cursor", In: "query", Type: "string", Desc: "Pagination cursor."},
 		}), s.notifications),
-		with(route("GET", "/v1/spaces/{id}", "Space info by id (raw)", map[string]any{}, rawOnlyParams), s.spaceInfo),
+		with(route("GET", "/v1/spaces/{id}", "Space info by id", xapi.Space{}, rawOnlyParams), s.spaceInfo),
 		with(route("GET", "/v1/spaces/{id}/stream", "A Space's live stream status", xapi.LiveStreamStatus{}, nil), s.spaceStream),
 		with(route("GET", "/v1/jobs/search", "Search X Jobs", []xapi.Job{}, []openapi.Param{
 			{Name: "keyword", In: "query", Type: "string", Desc: "Search keyword."},
