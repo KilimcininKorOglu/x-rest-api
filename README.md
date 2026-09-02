@@ -91,7 +91,7 @@ failure is `{"error": {"message": ...}}`. Every `/v1` route needs the Bearer key
 | `/v1/search?q=&product=Latest` | keyword/filter search (tweets) |
 | `/v1/search/people?q=` | keyword/filter search (users) |
 | `/v1/search/rss?q=` | search results as an RSS 2.0 feed |
-| `/v1/lists/{id}` | list info (raw GQL) |
+| `/v1/lists/{id}` | list metadata (parsed; `?raw=true` for GQL) |
 | `/v1/lists/{id}/tweets` | list timeline |
 | `/v1/lists/{id}/rss` | list timeline as an RSS 2.0 feed |
 | `/v1/lists/{id}/members` | list members |
@@ -106,6 +106,15 @@ failure is `{"error": {"message": ...}}`. Every `/v1` route needs the Bearer key
 | `/v1/trends?category=trending` | trends (raw GQL); `trending\|news\|sport\|entertainment` |
 | `/v1/bookmarks` | bookmarks (account-scoped) |
 | `/v1/home` | home feed; `?chronological=true` for the Following (latest) feed (account-scoped) |
+| `/v1/users/{handle}/affiliates` | a user's business-profile affiliates |
+| `/v1/suggestions?creator_only=` | who-to-follow recommendations (account-scoped) |
+| `/v1/lists` | your own lists (account-scoped) |
+| `/v1/analytics?from_time=&to_time=&metrics=` | account analytics overview (raw, account-scoped) |
+| `/v1/jobs/search?keyword=&location=` | search X Jobs |
+| `/v1/jobs/{id}` | job details |
+| `/v1/jobs/locations?query=` | job location suggestions |
+| `/v1/dm/inbox` | direct message inbox (account-scoped) |
+| `/v1/dm/conversations/{id}` | a DM conversation (account-scoped) |
 
 Every list read accepts `?cursor=<c>` for manual paging (the response then carries
 a top-level `next_cursor`), `?raw=true` to return the unparsed GraphQL response
@@ -157,6 +166,20 @@ specific account):
 | `GET /v1/scheduled` | none | your scheduled (unsent) tweets (account-scoped) |
 | `POST /v1/scheduled` | `{"text": "...", "execute_at": <unix>}` | schedule a tweet for a future time |
 | `DELETE /v1/scheduled/{id}` | none | cancel a scheduled tweet |
+| `POST /v1/lists` | `{"name": "...", "description": "...", "is_private": false}` | create a list, returns `{"id": "..."}` |
+| `PATCH /v1/lists/{id}` | `{"name": "...", "description": "...", "is_private": true}` | update a list (omit fields to leave unchanged) |
+| `DELETE /v1/lists/{id}` | none | delete a list |
+| `POST /v1/lists/{id}/members` | `{"user_id": "<id>"}` | add a member to a list |
+| `DELETE /v1/lists/{id}/members/{userId}` | none | remove a member from a list |
+| `POST /v1/lists/{id}/mute` | none | mute a list |
+| `DELETE /v1/lists/{id}/mute` | none | unmute a list |
+| `DELETE /v1/dm/conversations/{id}` | none | delete (leave) a DM conversation |
+| `DELETE /v1/users/{handle}/follower` | none | remove a follower |
+| `POST /v1/account/username` | `{"username": "..."}` | change your @username |
+| `PATCH /v1/account/profile` | `{"name": "...", "url": "...", "location": "...", "description": "..."}` | update your profile (omit fields to leave unchanged) |
+| `PUT /v1/account/profile/image` | `{"image_base64": "..."}` | set your avatar from base64 |
+| `PUT /v1/account/profile/banner` | `{"banner_base64": "..."}` | set your banner from base64 |
+| `POST /v1/account/password` | `{"current_password": "...", "new_password": "..."}` | change your password (may rotate the session; re-capture cookies) |
 
 ```bash
 curl -H "Authorization: Bearer $KEY" http://localhost:8430/v1/users/naval
