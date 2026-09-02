@@ -21,6 +21,16 @@ func (s *Server) mountV2(v chi.Router) {
 	v.Get("/tweets", s.v2TweetsByIDs)
 }
 
+// withMissing appends resource-not-found errors for requested ids/handles absent
+// from the envelope's data array, so a v2 batch lookup reports missing items the
+// way the official API does. It is a no-op when data is not an object array.
+func withMissing(env apiv2.Envelope, requested []string, keyField, resourceType, parameter string) apiv2.Envelope {
+	if objs, ok := env.Data.([]map[string]any); ok {
+		env.Errors = apiv2.MissingErrors(requested, objs, keyField, resourceType, parameter)
+	}
+	return env
+}
+
 // requireCSV reads a required comma-separated parameter, writing a v2 invalid
 // request when it is absent. It returns ok=false when the response was written.
 func requireCSV(w http.ResponseWriter, r *http.Request, key string) ([]string, bool) {
@@ -77,7 +87,11 @@ func (s *Server) v2UsersByIDs(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			return apiv2.Envelope{}, err
 		}
-		return apiv2.UsersEnvelope(c, users, sel, true)
+		env, err := apiv2.UsersEnvelope(c, users, sel, true)
+		if err != nil {
+			return apiv2.Envelope{}, err
+		}
+		return withMissing(env, ids, "id", "user", "id"), nil
 	})
 }
 
@@ -93,7 +107,11 @@ func (s *Server) v2UsersByUsernames(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			return apiv2.Envelope{}, err
 		}
-		return apiv2.UsersEnvelope(c, users, sel, true)
+		env, err := apiv2.UsersEnvelope(c, users, sel, true)
+		if err != nil {
+			return apiv2.Envelope{}, err
+		}
+		return withMissing(env, names, "username", "user", "username"), nil
 	})
 }
 
@@ -125,7 +143,11 @@ func (s *Server) v2TweetsByIDs(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			return apiv2.Envelope{}, err
 		}
-		return apiv2.TweetsEnvelope(c, tws, sel, true)
+		env, err := apiv2.TweetsEnvelope(c, tws, sel, true)
+		if err != nil {
+			return apiv2.Envelope{}, err
+		}
+		return withMissing(env, ids, "id", "tweet", "id"), nil
 	})
 }
 

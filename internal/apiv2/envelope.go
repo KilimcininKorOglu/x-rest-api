@@ -5,6 +5,8 @@
 // the optional expansion lookups that take an *xapi.XClient.
 package apiv2
 
+import "strings"
+
 // Envelope is the top-level X API v2 response body. Exactly one of Data or Errors
 // is set for a successful or failed request; Includes and Meta are optional.
 type Envelope struct {
@@ -53,10 +55,9 @@ type APIError struct {
 // typeResourceNotFound is the v2 problem type URI for a missing resource.
 const typeResourceNotFound = "https://api.twitter.com/2/problems/resource-not-found"
 
-// NotFound builds a resource-not-found error envelope for a single lookup, e.g. a
-// tweet or user id/username that does not resolve.
-func NotFound(resourceType, parameter, value string) Envelope {
-	return Envelope{Errors: []APIError{{
+// notFoundError builds one resource-not-found error entry.
+func notFoundError(resourceType, parameter, value string) APIError {
+	return APIError{
 		Title:        "Not Found Error",
 		Detail:       "Could not find " + resourceType + " with " + parameter + ": [" + value + "].",
 		Type:         typeResourceNotFound,
@@ -64,7 +65,33 @@ func NotFound(resourceType, parameter, value string) Envelope {
 		ResourceID:   value,
 		Parameter:    parameter,
 		Value:        value,
-	}}}
+	}
+}
+
+// NotFound builds a resource-not-found error envelope for a single lookup, e.g. a
+// tweet or user id/username that does not resolve.
+func NotFound(resourceType, parameter, value string) Envelope {
+	return Envelope{Errors: []APIError{notFoundError(resourceType, parameter, value)}}
+}
+
+// MissingErrors returns a resource-not-found error for each requested value absent
+// from the returned objects, matched on keyField (case-insensitive, so a requested
+// @Handle matches a returned lowercase username). It powers X v2's partial-error
+// batch responses, where found objects go in data and missing ones in errors.
+func MissingErrors(requested []string, objs []map[string]any, keyField, resourceType, parameter string) []APIError {
+	found := make(map[string]bool, len(objs))
+	for _, o := range objs {
+		if v, ok := o[keyField].(string); ok {
+			found[strings.ToLower(v)] = true
+		}
+	}
+	var errs []APIError
+	for _, req := range requested {
+		if !found[strings.ToLower(req)] {
+			errs = append(errs, notFoundError(resourceType, parameter, req))
+		}
+	}
+	return errs
 }
 
 // typeInvalidRequest is the v2 problem type URI for a malformed request.

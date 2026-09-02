@@ -177,6 +177,28 @@ func TestResolveEmptyWhenNoExpansion(t *testing.T) {
 	}
 }
 
+func TestMissingErrors(t *testing.T) {
+	objs := []map[string]any{{"id": "1"}, {"id": "3"}}
+	errs := MissingErrors([]string{"1", "2", "3", "4"}, objs, "id", "tweet", "id")
+	if len(errs) != 2 {
+		t.Fatalf("expected 2 missing, got %d: %+v", len(errs), errs)
+	}
+	if errs[0].Value != "2" || errs[1].Value != "4" {
+		t.Errorf("missing values wrong: %+v", errs)
+	}
+	if errs[0].ResourceType != "tweet" || errs[0].Type != typeResourceNotFound {
+		t.Errorf("missing error shape wrong: %+v", errs[0])
+	}
+}
+
+func TestMissingErrorsCaseInsensitiveUsername(t *testing.T) {
+	objs := []map[string]any{{"username": "jack"}}
+	errs := MissingErrors([]string{"Jack", "nobody"}, objs, "username", "user", "username")
+	if len(errs) != 1 || errs[0].Value != "nobody" {
+		t.Fatalf("case-insensitive match failed: %+v", errs)
+	}
+}
+
 func TestNotFoundEnvelope(t *testing.T) {
 	env := NotFound("tweet", "id", "123")
 	if len(env.Errors) != 1 {
