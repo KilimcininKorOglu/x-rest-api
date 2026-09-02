@@ -94,6 +94,34 @@ func (c *XClient) DeleteRetweet(sourceTweetID string) error {
 	return err
 }
 
+// HideReply hides a reply to one of the account's tweets. The account must be the
+// conversation author; otherwise x.com returns a 200 with an authorization error
+// (code 37), so check the tweet_moderate_put:"Done" result rather than the status.
+func (c *XClient) HideReply(tweetID string) error {
+	payload, err := c.call("ModerateTweet", map[string]any{"tweetId": tweetID})
+	if err != nil {
+		return err
+	}
+	if asString(dig(payload, "data", "tweet_moderate_put")) != "Done" {
+		return fmt.Errorf("ModerateTweet: %s", responseErr(payload))
+	}
+	return nil
+}
+
+// UnhideReply reverses HideReply, un-hiding a previously hidden reply by id. Like
+// HideReply it must check tweet_unmoderate_put:"Done", because an authorization
+// failure returns a 200 with an errors array.
+func (c *XClient) UnhideReply(tweetID string) error {
+	payload, err := c.call("UnmoderateTweet", map[string]any{"tweetId": tweetID})
+	if err != nil {
+		return err
+	}
+	if asString(dig(payload, "data", "tweet_unmoderate_put")) != "Done" {
+		return fmt.Errorf("UnmoderateTweet: %s", responseErr(payload))
+	}
+	return nil
+}
+
 // CreateBookmark bookmarks a tweet by id.
 func (c *XClient) CreateBookmark(tweetID string) error {
 	_, err := c.call("CreateBookmark", map[string]any{"tweet_id": tweetID})

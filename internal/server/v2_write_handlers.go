@@ -15,6 +15,7 @@ import (
 func (s *Server) mountV2Write(v chi.Router) {
 	v.Post("/tweets", s.v2CreateTweet)
 	v.Delete("/tweets/{id}", s.v2DeleteTweet)
+	v.Put("/tweets/{id}/hidden", s.v2HideReply)
 	v.Post("/users/{id}/likes", s.v2Like)
 	v.Delete("/users/{id}/likes/{tweet_id}", s.v2Unlike)
 	v.Post("/users/{id}/retweets", s.v2Retweet)
@@ -33,6 +34,28 @@ func (s *Server) mountV2Write(v chi.Router) {
 	v.Post("/dm_conversations/{id}/messages", s.v2SendDM)
 	v.Post("/users/{id}/blocking", s.v2Block)
 	v.Delete("/users/{id}/blocking/{target_id}", s.v2Unblock)
+}
+
+// v2HideReplyBody is the JSON body for PUT /2/tweets/{id}/hidden.
+type v2HideReplyBody struct {
+	Hidden bool `json:"hidden"`
+}
+
+// v2HideReply serves PUT /2/tweets/{id}/hidden, the X v2 hide-reply toggle:
+// hidden=true calls ModerateTweet, hidden=false calls UnmoderateTweet on {id}.
+func (s *Server) v2HideReply(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	var body v2HideReplyBody
+	if !decodeV2Body(w, r, &body) {
+		return
+	}
+	op, act := "UnmoderateTweet", (*xapi.XClient).UnhideReply
+	if body.Hidden {
+		op, act = "ModerateTweet", (*xapi.XClient).HideReply
+	}
+	s.v2WriteResult(w, r, op,
+		func(c *xapi.XClient) error { return act(c, id) },
+		map[string]any{"hidden": body.Hidden})
 }
 
 // v2Block serves POST /2/users/{id}/blocking.

@@ -501,6 +501,13 @@ func (c *XClient) ListTweets(listID string, count int, cursor string) ([]Tweet, 
 		parseTimelineTweets, tweetKey, count, cursor)
 }
 
+// ModeratedReplies returns the hidden replies under a root tweet, keyed by
+// rootTweetId. It is the read companion of HideReply/UnhideReply.
+func (c *XClient) ModeratedReplies(rootTweetID string, count int, cursor string) ([]Tweet, string, error) {
+	return paginate(c, "ModeratedTimeline", map[string]any{"rootTweetId": rootTweetID},
+		parseTimelineTweets, tweetKey, count, cursor)
+}
+
 func (c *XClient) CommunityTweets(communityID string, count int, cursor string) ([]Tweet, string, error) {
 	return paginate(c, "CommunityTweetsTimeline", map[string]any{"communityId": communityID},
 		parseTimelineTweets, tweetKey, count, cursor)

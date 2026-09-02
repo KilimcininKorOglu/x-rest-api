@@ -167,6 +167,7 @@ func v2Paths(idParam map[string]any) map[string]any {
 		"/2/tweets/{id}/retweeted_by":                   map[string]any{"get": v2ListOp("Users who retweeted a tweet", idParam)},
 		"/2/tweets/{id}/liking_users":                   map[string]any{"get": v2ListOp("Users who liked a tweet", idParam)},
 		"/2/tweets/{id}/quote_tweets":                   map[string]any{"get": v2ListOp("Tweets quoting a tweet", idParam)},
+		"/2/tweets/{id}/hidden":                         map[string]any{"put": v2WriteOp("Hide or unhide a reply", true, idParam)},
 		"/2/users/{id}/mentions":                        map[string]any{"get": v2ListOp("Tweets mentioning a user", idParam)},
 		"/2/users/{id}/liked_tweets":                    map[string]any{"get": v2ListOp("Tweets a user liked", idParam)},
 		"/2/users/{id}/followers":                       map[string]any{"get": v2ListOp("A user's followers", idParam)},

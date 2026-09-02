@@ -90,6 +90,15 @@ func (s *Server) blockedAccounts(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// hiddenReplies serves GET /v1/tweets/{id}/hidden: the hidden replies under the
+// account's tweet (account-scoped, ModeratedTimeline).
+func (s *Server) hiddenReplies(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	s.serveRead(w, r, true, "ModeratedTimeline", func(c *xapi.XClient) (any, string, error) {
+		return asRead(c.ModeratedReplies(id, countParam(r), cursorParam(r)))
+	})
+}
+
 // tweetQuotes serves GET /v1/tweets/{id}/quotes: tweets quoting the given tweet,
 // via the quoted_tweet_id: search operator (no dedicated op exists).
 func (s *Server) tweetQuotes(w http.ResponseWriter, r *http.Request) {

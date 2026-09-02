@@ -207,6 +207,16 @@ func (s *Server) deleteTweet(w http.ResponseWriter, r *http.Request) {
 	s.actWrite(w, r, "DeleteTweet", "deleted", (*xapi.XClient).DeleteTweet)
 }
 
+// hideReply hides a reply to one of the account's tweets (ModerateTweet).
+func (s *Server) hideReply(w http.ResponseWriter, r *http.Request) {
+	s.actWrite(w, r, "ModerateTweet", "hidden", (*xapi.XClient).HideReply)
+}
+
+// unhideReply un-hides a previously hidden reply (UnmoderateTweet).
+func (s *Server) unhideReply(w http.ResponseWriter, r *http.Request) {
+	s.actWrite(w, r, "UnmoderateTweet", "unhidden", (*xapi.XClient).UnhideReply)
+}
+
 func (s *Server) unlikeTweet(w http.ResponseWriter, r *http.Request) {
 	s.actWrite(w, r, "UnfavoriteTweet", "unliked", (*xapi.XClient).UnfavoriteTweet)
 }
