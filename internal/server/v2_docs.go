@@ -166,6 +166,8 @@ func v2Paths(idParam map[string]any) map[string]any {
 		"/2/users/{id}/following/{target_id}":           map[string]any{"delete": v2WriteOp("Unfollow a user", false, idParam, v2PathParam("target_id", "The followed user id."))},
 		"/2/tweets/{id}/retweeted_by":                   map[string]any{"get": v2ListOp("Users who retweeted a tweet", idParam)},
 		"/2/tweets/{id}/liking_users":                   map[string]any{"get": v2ListOp("Users who liked a tweet", idParam)},
+		"/2/tweets/{id}/quote_tweets":                   map[string]any{"get": v2ListOp("Tweets quoting a tweet", idParam)},
+		"/2/users/{id}/mentions":                        map[string]any{"get": v2ListOp("Tweets mentioning a user", idParam)},
 		"/2/users/{id}/liked_tweets":                    map[string]any{"get": v2ListOp("Tweets a user liked", idParam)},
 		"/2/users/{id}/followers":                       map[string]any{"get": v2ListOp("A user's followers", idParam)},
 		"/2/users/{id}/timelines/reverse_chronological": map[string]any{"get": v2ListOp("The account's home timeline", idParam)},

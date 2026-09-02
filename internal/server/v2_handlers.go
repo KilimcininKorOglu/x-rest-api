@@ -21,6 +21,8 @@ func (s *Server) mountV2(v chi.Router) {
 	v.Get("/tweets/search/recent", s.v2SearchRecent)
 	v.Get("/tweets/{id}/retweeted_by", s.v2RetweetedBy)
 	v.Get("/tweets/{id}/liking_users", s.v2LikingUsers)
+	v.Get("/tweets/{id}/quote_tweets", s.v2QuoteTweets)
+	v.Get("/users/{id}/mentions", s.v2Mentions)
 	v.Get("/tweets/{id}", s.v2Tweet)
 	v.Get("/tweets", s.v2TweetsByIDs)
 	v.Get("/users/{id}/liked_tweets", s.v2LikedTweets)
@@ -34,6 +36,31 @@ func (s *Server) mountV2(v chi.Router) {
 	v.Get("/dm_events", s.v2DMEvents)
 	v.Get("/spaces/{id}", s.v2Space)
 	v.Get("/users/{id}/blocking", s.v2Blocking)
+}
+
+// v2QuoteTweets serves GET /2/tweets/{id}/quote_tweets: tweets quoting the given
+// tweet, via the quoted_tweet_id: search operator (no dedicated op exists).
+func (s *Server) v2QuoteTweets(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	s.v2TweetsPage(w, r, false, "SearchTimeline",
+		func(c *xapi.XClient, max int, cur string) ([]xapi.Tweet, string, error) {
+			return c.Search("quoted_tweet_id:"+id, "Latest", max, cur)
+		})
+}
+
+// v2Mentions serves GET /2/users/{id}/mentions: tweets mentioning the user, via an
+// @handle search (no dedicated per-user mentions op exists). It resolves {id} to a
+// handle first; an unknown user yields an empty result.
+func (s *Server) v2Mentions(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	s.v2TweetsPage(w, r, false, "SearchTimeline",
+		func(c *xapi.XClient, max int, cur string) ([]xapi.Tweet, string, error) {
+			u, err := lookupUser(c, id)
+			if err != nil || u == nil {
+				return nil, "", err
+			}
+			return c.Search("@"+u.ScreenName, "Latest", max, cur)
+		})
 }
 
 // v2Blocking serves GET /2/users/{id}/blocking, the account's blocked users. It is

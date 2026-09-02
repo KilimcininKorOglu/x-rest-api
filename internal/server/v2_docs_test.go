@@ -37,6 +37,8 @@ func TestV2Spec(t *testing.T) {
 		"/2/users/{id}/following/{target_id}",
 		"/2/tweets/{id}/retweeted_by",
 		"/2/tweets/{id}/liking_users",
+		"/2/tweets/{id}/quote_tweets",
+		"/2/users/{id}/mentions",
 		"/2/users/{id}/liked_tweets",
 		"/2/users/{id}/followers",
 		"/2/users/{id}/timelines/reverse_chronological",

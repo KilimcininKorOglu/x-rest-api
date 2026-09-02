@@ -90,6 +90,28 @@ func (s *Server) blockedAccounts(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// tweetQuotes serves GET /v1/tweets/{id}/quotes: tweets quoting the given tweet,
+// via the quoted_tweet_id: search operator (no dedicated op exists).
+func (s *Server) tweetQuotes(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	s.serveRead(w, r, false, "SearchTimeline", func(c *xapi.XClient) (any, string, error) {
+		return asRead(c.Search("quoted_tweet_id:"+id, "Latest", countParam(r), cursorParam(r)))
+	})
+}
+
+// userMentions serves GET /v1/users/{handle}/mentions: tweets mentioning the user,
+// via an @handle search (no dedicated per-user mentions op exists).
+func (s *Server) userMentions(w http.ResponseWriter, r *http.Request) {
+	handle := chi.URLParam(r, "handle")
+	s.serveRead(w, r, false, "SearchTimeline", func(c *xapi.XClient) (any, string, error) {
+		u, err := lookupUser(c, handle)
+		if err != nil || u == nil {
+			return asRead[xapi.Tweet](nil, "", err)
+		}
+		return asRead(c.Search("@"+u.ScreenName, "Latest", countParam(r), cursorParam(r)))
+	})
+}
+
 // accountMe serves GET /v1/account/me: the authenticated account's own profile
 // (account-scoped, Viewer).
 func (s *Server) accountMe(w http.ResponseWriter, r *http.Request) {
