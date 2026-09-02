@@ -21,6 +21,7 @@ func TestV2Spec(t *testing.T) {
 	}
 	want := []string{
 		"/2/users/by/username/{username}",
+		"/2/users/me",
 		"/2/users/{id}",
 		"/2/users",
 		"/2/users/by",

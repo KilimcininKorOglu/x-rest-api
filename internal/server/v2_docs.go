@@ -136,6 +136,7 @@ func v2Paths(idParam map[string]any) map[string]any {
 	userParam := v2PathParam("username", "The user's handle, without @.")
 	return map[string]any{
 		"/2/users/by/username/{username}": map[string]any{"get": v2Op("Look up a user by username", userParam)},
+		"/2/users/me":                     map[string]any{"get": v2Op("The authenticated user's own profile")},
 		"/2/users/{id}":                   map[string]any{"get": v2Op("Look up a user by id", idParam)},
 		"/2/users":                        map[string]any{"get": v2Op("Look up users by id", v2QueryParam("ids", "Comma-separated user ids (required)."))},
 		"/2/users/by":                     map[string]any{"get": v2Op("Look up users by username", v2QueryParam("usernames", "Comma-separated usernames (required)."))},

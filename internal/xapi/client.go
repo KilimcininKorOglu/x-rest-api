@@ -419,6 +419,20 @@ func (c *XClient) BlockedAccounts(count int, cursor string) ([]XUser, string, er
 	return paginate(c, "BlockedAccountsAll", map[string]any{}, parseTimelineUsers, userKey, count, cursor)
 }
 
+// Me returns the authenticated account's own profile (Viewer). It is
+// account-scoped.
+func (c *XClient) Me() (*XUser, error) {
+	payload, err := c.call("Viewer", map[string]any{})
+	if err != nil {
+		return nil, err
+	}
+	u := parseUserResult(asMap(dig(payload, "data", "viewer", "user_results", "result")))
+	if u == nil {
+		return nil, fmt.Errorf("Me: %s", responseErr(payload))
+	}
+	return u, nil
+}
+
 // ---------------------------- tweet timelines --------------------------- //
 
 func (c *XClient) userTimeline(op, handle string, count int, cursor string) ([]Tweet, string, error) {

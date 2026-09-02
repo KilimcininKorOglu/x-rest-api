@@ -90,6 +90,21 @@ func (s *Server) blockedAccounts(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// accountMe serves GET /v1/account/me: the authenticated account's own profile
+// (account-scoped, Viewer).
+func (s *Server) accountMe(w http.ResponseWriter, r *http.Request) {
+	s.serveRead(w, r, true, "Viewer", func(c *xapi.XClient) (any, string, error) {
+		if rawParam(r) {
+			return rawByVars(c, "Viewer", map[string]any{}, "", 0)
+		}
+		u, err := c.Me()
+		if err == nil && u == nil {
+			return nil, "", errNotFound
+		}
+		return u, "", err
+	})
+}
+
 // serveRead runs a read against a chosen account, rotating on rate-limit walls
 // when the account is not pinned, and writing the JSON response. op is the
 // endpoint's primary GraphQL op, used for per-op account selection and locking.

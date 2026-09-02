@@ -2176,5 +2176,19 @@
 			"responsive_web_grok_community_note_auto_translation_is_enabled": true,
 			"responsive_web_enhance_cards_enabled": false
 		}
+	},
+	"Viewer": {
+		"queryId": "5XShkXk2oO2J7SYmTu6pvw",
+		"method": "GET",
+		"variables": {},
+		"features": {
+			"profile_label_improvements_pcf_label_in_post_enabled": true,
+			"responsive_web_profile_redirect_enabled": false,
+			"rweb_tipjar_consumption_enabled": false,
+			"verified_phone_label_enabled": false,
+			"creator_subscriptions_tweet_preview_api_enabled": true,
+			"responsive_web_graphql_timeline_navigation_enabled": true,
+			"subscriptions_upsells_api_enabled": false
+		}
 	}
 }

@@ -282,6 +282,7 @@ func (s *Server) v1Routes() []apiRoute {
 			{Name: "count", In: "query", Type: "integer", Desc: "Items to return (default 40, max 200)."},
 			{Name: "cursor", In: "query", Type: "string", Desc: "Pagination cursor."},
 		}), s.blockedAccounts),
+		with(route("GET", "/v1/account/me", "Your own profile (account-scoped)", xapi.XUser{}, rawOnlyParams), s.accountMe),
 		with(route("GET", "/v1/lists", "Your own lists (account-scoped)", []xapi.List{}, []openapi.Param{
 			{Name: "count", In: "query", Type: "integer", Desc: "Items to return (default 40, max 200)."},
 			{Name: "cursor", In: "query", Type: "string", Desc: "Pagination cursor."},

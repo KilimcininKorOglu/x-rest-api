@@ -14,6 +14,7 @@ import (
 func (s *Server) mountV2(v chi.Router) {
 	v.Get("/users/by/username/{username}", s.v2UserByUsername)
 	v.Get("/users/by", s.v2UsersByUsernames)
+	v.Get("/users/me", s.v2Me)
 	v.Get("/users/{id}", s.v2UserByID)
 	v.Get("/users", s.v2UsersByIDs)
 	v.Get("/users/{id}/tweets", s.v2UserTweets)
@@ -150,6 +151,19 @@ func (s *Server) v2UserByUsername(w http.ResponseWriter, r *http.Request) {
 			return apiv2.NotFound("user", "username", username), nil
 		}
 		return apiv2.UsersEnvelope(c, []xapi.XUser{*u}, sel, false)
+	})
+}
+
+// v2Me serves GET /2/users/me, the authenticated account's own profile. It is
+// account-scoped (Viewer).
+func (s *Server) v2Me(w http.ResponseWriter, r *http.Request) {
+	sel := apiv2.ParseSelection(r.URL.Query())
+	s.serveV2(w, r, true, "Viewer", func(c *xapi.XClient) (apiv2.Envelope, error) {
+		u, err := c.Me()
+		if err != nil {
+			return apiv2.Envelope{}, err
+		}
+		return apiv2.Envelope{Data: apiv2.UserObject(*u, sel)}, nil
 	})
 }
 
