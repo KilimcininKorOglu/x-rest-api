@@ -82,6 +82,14 @@ func (s *Server) pickAccount(r *http.Request, scoped bool, op string) (store.Acc
 // pagination cursor ("" when there is none or the endpoint is not paginated).
 type readFn func(*xapi.XClient) (any, string, error)
 
+// blockedAccounts serves GET /v1/blocks: the account's blocked users
+// (account-scoped, BlockedAccountsAll).
+func (s *Server) blockedAccounts(w http.ResponseWriter, r *http.Request) {
+	s.serveRead(w, r, true, "BlockedAccountsAll", func(c *xapi.XClient) (any, string, error) {
+		return asRead(c.BlockedAccounts(countParam(r), cursorParam(r)))
+	})
+}
+
 // serveRead runs a read against a chosen account, rotating on rate-limit walls
 // when the account is not pinned, and writing the JSON response. op is the
 // endpoint's primary GraphQL op, used for per-op account selection and locking.

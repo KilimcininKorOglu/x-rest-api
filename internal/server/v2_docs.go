@@ -187,8 +187,11 @@ func v2Paths(idParam map[string]any) map[string]any {
 		"/2/dm_events":                    map[string]any{"get": v2ListOp("The account's direct-message events")},
 		"/2/dm_conversations/{id}/messages": map[string]any{"post": v2WriteOp("Send a direct message", true,
 			v2PathParam("id", "The dm_conversation_id."))},
-		"/2/spaces/{id}":                     map[string]any{"get": v2Op("Look up a Space by id", idParam)},
-		"/2/users/{id}/blocking":             map[string]any{"post": v2WriteOp("Block a user", true, idParam)},
+		"/2/spaces/{id}": map[string]any{"get": v2Op("Look up a Space by id", idParam)},
+		"/2/users/{id}/blocking": map[string]any{
+			"get":  v2ListOp("The account's blocked users", idParam),
+			"post": v2WriteOp("Block a user", true, idParam),
+		},
 		"/2/users/{id}/blocking/{target_id}": map[string]any{"delete": v2WriteOp("Unblock a user", false, idParam, v2PathParam("target_id", "The blocked user id."))},
 	}
 }

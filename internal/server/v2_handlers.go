@@ -32,6 +32,16 @@ func (s *Server) mountV2(v chi.Router) {
 	v.Get("/lists/{id}/members", s.v2ListMembers)
 	v.Get("/dm_events", s.v2DMEvents)
 	v.Get("/spaces/{id}", s.v2Space)
+	v.Get("/users/{id}/blocking", s.v2Blocking)
+}
+
+// v2Blocking serves GET /2/users/{id}/blocking, the account's blocked users. It is
+// account-scoped and ignores {id}.
+func (s *Server) v2Blocking(w http.ResponseWriter, r *http.Request) {
+	s.v2UsersPage(w, r, true, "BlockedAccountsAll",
+		func(c *xapi.XClient, max int, cur string) ([]xapi.XUser, string, error) {
+			return c.BlockedAccounts(max, cur)
+		})
 }
 
 // v2Space serves GET /2/spaces/{id}.

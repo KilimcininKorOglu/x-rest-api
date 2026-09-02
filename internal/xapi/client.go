@@ -413,6 +413,12 @@ func (c *XClient) Unblock(handleOrID string) error {
 	return err
 }
 
+// BlockedAccounts lists the authenticated account's blocked users
+// (BlockedAccountsAll). It is account-scoped, so it takes no target id.
+func (c *XClient) BlockedAccounts(count int, cursor string) ([]XUser, string, error) {
+	return paginate(c, "BlockedAccountsAll", map[string]any{}, parseTimelineUsers, userKey, count, cursor)
+}
+
 // ---------------------------- tweet timelines --------------------------- //
 
 func (c *XClient) userTimeline(op, handle string, count int, cursor string) ([]Tweet, string, error) {
