@@ -3,9 +3,23 @@
 package xapi
 
 import (
-	"fmt"
+	"encoding/json"
+	"regexp"
 	"testing"
 )
+
+// findFolderID pulls the first bookmark-folder id out of a raw folders response.
+func findFolderID(raw map[string]any) string {
+	b, err := json.Marshal(raw)
+	if err != nil {
+		return ""
+	}
+	m := regexp.MustCompile(`"(?:rest_id|id)":"(\d{6,})"`).FindStringSubmatch(string(b))
+	if len(m) == 2 {
+		return m[1]
+	}
+	return ""
+}
 
 // TestLiveReads smoke-tests every read surface against the live API with known
 // targets (jack / tweet 20 / "twitter"). It never fails on an upstream error;
@@ -164,9 +178,35 @@ func TestLiveReads(t *testing.T) {
 		}
 	}
 
+	// Space: ephemeral ids may be gone, but the op path is still exercised.
+	{
+		var lastErr error
+		done := false
+		for _, sid := range []string{"1mrxmayRyrQxy", "1vOxwjaWEbdJB"} {
+			m, e := c.CallRaw("AudioSpaceById", map[string]any{"id": sid}, "", 0)
+			if e == nil {
+				report("SpaceInfo("+sid+")", len(m), nil)
+				done = true
+				break
+			}
+			lastErr = e
+		}
+		if !done {
+			report("SpaceInfo (ids likely expired)", 0, lastErr)
+		}
+	}
+	// BookmarkFolderTweets: take a folder id from the account's own folder slice.
+	if raw, e := c.CallRaw("BookmarkFoldersSlice", map[string]any{}, "", 0); e == nil {
+		if fid := findFolderID(raw); fid != "" {
+			s, _, e2 := c.BookmarkFolderTweets(fid, 3, "")
+			report("BookmarkFolderTweets("+fid+")", len(s), e2)
+		} else {
+			t.Log("  skip BookmarkFolderTweets: account has no bookmark folder")
+		}
+	}
+
 	t.Logf("SUMMARY: %d ok, %d fail (of %d)", ok, fail, ok+fail)
 	if fail > 0 {
-		t.Logf("NOTE: id-scoped reads (List/Community/Space/BookmarkFolder) are not covered here; they need real ids.")
+		t.Logf("NOTE: some fails are environment WAF blocks (by-rest-id) or expired ephemeral ids, not parser bugs.")
 	}
-	_ = fmt.Sprint
 }
