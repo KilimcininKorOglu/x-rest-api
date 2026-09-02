@@ -11,6 +11,7 @@ import (
 
 	"x-rest-api/internal/openapi"
 	"x-rest-api/internal/store"
+	"x-rest-api/internal/version"
 	"x-rest-api/internal/xapi"
 )
 
@@ -347,5 +348,5 @@ func (s *Server) Routes(admin http.Handler) http.Handler {
 }
 
 func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	writeJSON(w, http.StatusOK, map[string]string{"status": "ok", "version": version.Version})
 }

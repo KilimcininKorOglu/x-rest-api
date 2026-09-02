@@ -12,6 +12,7 @@ import (
 	"net/http"
 
 	"x-rest-api/internal/openapi"
+	"x-rest-api/internal/version"
 )
 
 //go:embed static/swagger-ui-bundle.js static/swagger-ui.css
@@ -43,7 +44,7 @@ func (s *Server) buildSpec(routes []apiRoute) {
 	for i, rt := range routes {
 		meta[i] = rt.Route
 	}
-	doc := openapi.Build("x-rest-api", "1.0.0", "/", meta)
+	doc := openapi.Build("x-rest-api", version.Version, "/", meta)
 	b, err := json.Marshal(doc)
 	if err != nil {
 		log.Printf("openapi: marshal spec: %v", err)
