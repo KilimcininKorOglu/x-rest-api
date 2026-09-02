@@ -86,16 +86,17 @@ func (c *XClient) call(op string, variables map[string]any) (map[string]any, err
 		return nil, err
 	}
 
-	txValue := ""
-	if txRequired[op] {
-		path := fmt.Sprintf("/i/api/graphql/%s/%s", s.QueryID, op)
-		txValue, err = c.sess.transactionID(s.Method, path)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", op, err)
+	// x.com attaches x-client-transaction-id to every request. Some ops (search,
+	// bookmark mutations) hard-reject its absence with 404, while others tolerate a
+	// missing one. Generate it for every call; a generation failure only aborts the
+	// ops that strictly require it, so tolerant reads keep working.
+	path := fmt.Sprintf("/i/api/graphql/%s/%s", s.QueryID, op)
+	txValue, txErr := c.sess.transactionID(s.Method, path)
+	if (txErr != nil || txValue == "") && txRequired[op] {
+		if txErr != nil {
+			return nil, fmt.Errorf("%s: %w", op, txErr)
 		}
-		if txValue == "" {
-			return nil, &TxRequiredError{Op: op}
-		}
+		return nil, &TxRequiredError{Op: op}
 	}
 	req.Header = c.sess.headers(c.acct, "en", txValue)
 
