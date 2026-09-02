@@ -195,6 +195,14 @@ func (s *Server) unmuteUser(w http.ResponseWriter, r *http.Request) {
 	s.actWriteHandle(w, r, "UnmuteUser", "unmuted", (*xapi.XClient).Unmute)
 }
 
+func (s *Server) blockUser(w http.ResponseWriter, r *http.Request) {
+	s.actWriteHandle(w, r, "BlockUser", "blocked", (*xapi.XClient).Block)
+}
+
+func (s *Server) unblockUser(w http.ResponseWriter, r *http.Request) {
+	s.actWriteHandle(w, r, "UnblockUser", "unblocked", (*xapi.XClient).Unblock)
+}
+
 func (s *Server) deleteTweet(w http.ResponseWriter, r *http.Request) {
 	s.actWrite(w, r, "DeleteTweet", "deleted", (*xapi.XClient).DeleteTweet)
 }

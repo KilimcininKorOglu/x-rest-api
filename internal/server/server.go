@@ -305,6 +305,8 @@ func (s *Server) v1Routes() []apiRoute {
 		writeRoute(route("DELETE", "/v1/users/{handle}/follower", "Remove a follower", writeOK, nil), nil, 200, s.removeFollower),
 		writeRoute(route("POST", "/v1/users/{handle}/mute", "Mute a user", writeOK, nil), nil, 200, s.muteUser),
 		writeRoute(route("DELETE", "/v1/users/{handle}/mute", "Unmute a user", writeOK, nil), nil, 200, s.unmuteUser),
+		writeRoute(route("POST", "/v1/users/{handle}/block", "Block a user", writeOK, nil), nil, 200, s.blockUser),
+		writeRoute(route("DELETE", "/v1/users/{handle}/block", "Unblock a user", writeOK, nil), nil, 200, s.unblockUser),
 		writeRoute(route("POST", "/v1/account/username", "Change your @username", writeOK, nil), usernameBody{}, 200, s.changeUsername),
 		writeRoute(route("PATCH", "/v1/account/profile", "Update your profile (name/url/location/description)", writeOK, nil), updateProfileBody{}, 200, s.updateProfile),
 		writeRoute(route("PUT", "/v1/account/profile/image", "Set your avatar from base64", writeOK, nil), imageBody{}, 200, s.updateProfileImage),

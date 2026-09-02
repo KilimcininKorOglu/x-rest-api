@@ -392,6 +392,27 @@ func (c *XClient) Unmute(handleOrID string) error {
 	return err
 }
 
+// Block blocks a user by @handle or numeric id (REST 1.1 blocks/create). A block
+// hides the target from the account and removes any mutual follow.
+func (c *XClient) Block(handleOrID string) error {
+	uid, err := c.resolveUID(handleOrID)
+	if err != nil {
+		return err
+	}
+	_, err = c.callForm("BlockUser", "https://x.com/i/api/1.1/blocks/create.json", url.Values{"user_id": {uid}})
+	return err
+}
+
+// Unblock reverses Block by @handle or numeric id (REST 1.1 blocks/destroy).
+func (c *XClient) Unblock(handleOrID string) error {
+	uid, err := c.resolveUID(handleOrID)
+	if err != nil {
+		return err
+	}
+	_, err = c.callForm("UnblockUser", "https://x.com/i/api/1.1/blocks/destroy.json", url.Values{"user_id": {uid}})
+	return err
+}
+
 // ---------------------------- tweet timelines --------------------------- //
 
 func (c *XClient) userTimeline(op, handle string, count int, cursor string) ([]Tweet, string, error) {

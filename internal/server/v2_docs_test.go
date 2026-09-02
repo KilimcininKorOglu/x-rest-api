@@ -51,6 +51,8 @@ func TestV2Spec(t *testing.T) {
 		"/2/dm_events",
 		"/2/dm_conversations/{id}/messages",
 		"/2/spaces/{id}",
+		"/2/users/{id}/blocking",
+		"/2/users/{id}/blocking/{target_id}",
 	}
 	if len(paths) != len(want) {
 		t.Errorf("path count = %d, want %d", len(paths), len(want))

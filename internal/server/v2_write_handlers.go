@@ -31,6 +31,31 @@ func (s *Server) mountV2Write(v chi.Router) {
 	v.Post("/lists/{id}/members", s.v2ListAddMember)
 	v.Delete("/lists/{id}/members/{user_id}", s.v2ListRemoveMember)
 	v.Post("/dm_conversations/{id}/messages", s.v2SendDM)
+	v.Post("/users/{id}/blocking", s.v2Block)
+	v.Delete("/users/{id}/blocking/{target_id}", s.v2Unblock)
+}
+
+// v2Block serves POST /2/users/{id}/blocking.
+func (s *Server) v2Block(w http.ResponseWriter, r *http.Request) {
+	var body v2FollowBody
+	if !decodeV2Body(w, r, &body) {
+		return
+	}
+	if body.TargetUserID == "" {
+		writeJSON(w, http.StatusBadRequest, apiv2.Invalid("target_user_id", "The `target_user_id` field is required."))
+		return
+	}
+	s.v2WriteResult(w, r, "BlockUser",
+		func(c *xapi.XClient) error { return c.Block(body.TargetUserID) },
+		map[string]any{"blocking": true})
+}
+
+// v2Unblock serves DELETE /2/users/{id}/blocking/{target_id}.
+func (s *Server) v2Unblock(w http.ResponseWriter, r *http.Request) {
+	target := chi.URLParam(r, "target_id")
+	s.v2WriteResult(w, r, "UnblockUser",
+		func(c *xapi.XClient) error { return c.Unblock(target) },
+		map[string]any{"blocking": false})
 }
 
 // v2SendDMBody is the JSON body for POST /2/dm_conversations/{id}/messages.
