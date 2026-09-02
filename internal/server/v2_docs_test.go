@@ -28,6 +28,10 @@ func TestV2Spec(t *testing.T) {
 		"/2/tweets/{id}",
 		"/2/tweets",
 		"/2/tweets/search/recent",
+		"/2/users/{id}/likes",
+		"/2/users/{id}/likes/{tweet_id}",
+		"/2/users/{id}/retweets",
+		"/2/users/{id}/retweets/{source_tweet_id}",
 	}
 	if len(paths) != len(want) {
 		t.Errorf("path count = %d, want %d", len(paths), len(want))
@@ -40,19 +44,21 @@ func TestV2Spec(t *testing.T) {
 	assertV2Secured(t, paths)
 }
 
-// assertV2Secured checks that every GET operation carries a bearerAuth security
-// requirement.
+// assertV2Secured checks that every operation on every path carries a bearerAuth
+// security requirement.
 func assertV2Secured(t *testing.T, paths map[string]any) {
 	t.Helper()
 	for name, item := range paths {
-		get, ok := item.(map[string]any)["get"].(map[string]any)
-		if !ok {
-			t.Errorf("path %q has no get operation", name)
+		ops, ok := item.(map[string]any)
+		if !ok || len(ops) == 0 {
+			t.Errorf("path %q has no operations", name)
 			continue
 		}
-		sec, ok := get["security"].([]any)
-		if !ok || len(sec) == 0 {
-			t.Errorf("path %q get is not secured", name)
+		for method, op := range ops {
+			sec, ok := op.(map[string]any)["security"].([]any)
+			if !ok || len(sec) == 0 {
+				t.Errorf("path %q %s is not secured", name, method)
+			}
 		}
 	}
 }

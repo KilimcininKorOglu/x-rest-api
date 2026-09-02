@@ -15,6 +15,68 @@ import (
 func (s *Server) mountV2Write(v chi.Router) {
 	v.Post("/tweets", s.v2CreateTweet)
 	v.Delete("/tweets/{id}", s.v2DeleteTweet)
+	v.Post("/users/{id}/likes", s.v2Like)
+	v.Delete("/users/{id}/likes/{tweet_id}", s.v2Unlike)
+	v.Post("/users/{id}/retweets", s.v2Retweet)
+	v.Delete("/users/{id}/retweets/{source_tweet_id}", s.v2Unretweet)
+}
+
+// v2TweetIDBody is the JSON body for the like/retweet POST endpoints.
+type v2TweetIDBody struct {
+	TweetID string `json:"tweet_id"`
+}
+
+// tweetIDFromBody decodes the body and returns a required tweet_id, writing a v2
+// invalid-request when it is missing. It returns ok=false when a response was
+// written.
+func tweetIDFromBody(w http.ResponseWriter, r *http.Request) (string, bool) {
+	var body v2TweetIDBody
+	if !decodeV2Body(w, r, &body) {
+		return "", false
+	}
+	if body.TweetID == "" {
+		writeJSON(w, http.StatusBadRequest, apiv2.Invalid("tweet_id", "The `tweet_id` field is required."))
+		return "", false
+	}
+	return body.TweetID, true
+}
+
+// v2Like serves POST /2/users/{id}/likes.
+func (s *Server) v2Like(w http.ResponseWriter, r *http.Request) {
+	tid, ok := tweetIDFromBody(w, r)
+	if !ok {
+		return
+	}
+	s.v2WriteResult(w, r, "FavoriteTweet",
+		func(c *xapi.XClient) error { return c.FavoriteTweet(tid) },
+		map[string]any{"liked": true})
+}
+
+// v2Unlike serves DELETE /2/users/{id}/likes/{tweet_id}.
+func (s *Server) v2Unlike(w http.ResponseWriter, r *http.Request) {
+	tid := chi.URLParam(r, "tweet_id")
+	s.v2WriteResult(w, r, "UnfavoriteTweet",
+		func(c *xapi.XClient) error { return c.UnfavoriteTweet(tid) },
+		map[string]any{"liked": false})
+}
+
+// v2Retweet serves POST /2/users/{id}/retweets.
+func (s *Server) v2Retweet(w http.ResponseWriter, r *http.Request) {
+	tid, ok := tweetIDFromBody(w, r)
+	if !ok {
+		return
+	}
+	s.v2WriteResult(w, r, "CreateRetweet",
+		func(c *xapi.XClient) error { _, err := c.CreateRetweet(tid); return err },
+		map[string]any{"retweeted": true})
+}
+
+// v2Unretweet serves DELETE /2/users/{id}/retweets/{source_tweet_id}.
+func (s *Server) v2Unretweet(w http.ResponseWriter, r *http.Request) {
+	tid := chi.URLParam(r, "source_tweet_id")
+	s.v2WriteResult(w, r, "DeleteRetweet",
+		func(c *xapi.XClient) error { return c.DeleteRetweet(tid) },
+		map[string]any{"retweeted": false})
 }
 
 // v2CreateTweetBody is the JSON body for POST /2/tweets, mirroring the X API v2

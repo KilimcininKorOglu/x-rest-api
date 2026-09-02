@@ -154,6 +154,10 @@ func v2Paths(idParam map[string]any) map[string]any {
 			v2QueryParam("query", "Search query (required)."),
 			v2QueryParam("max_results", "Page size, 5-100 (default 10)."),
 			v2QueryParam("next_token", "Cursor from a previous meta.next_token."))},
+		"/2/users/{id}/likes":                      map[string]any{"post": v2WriteOp("Like a tweet", true, idParam)},
+		"/2/users/{id}/likes/{tweet_id}":           map[string]any{"delete": v2WriteOp("Unlike a tweet", false, idParam, v2PathParam("tweet_id", "The liked tweet id."))},
+		"/2/users/{id}/retweets":                   map[string]any{"post": v2WriteOp("Retweet a tweet", true, idParam)},
+		"/2/users/{id}/retweets/{source_tweet_id}": map[string]any{"delete": v2WriteOp("Undo a retweet", false, idParam, v2PathParam("source_tweet_id", "The retweeted tweet id."))},
 	}
 }
 
