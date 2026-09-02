@@ -175,6 +175,15 @@ func v2Paths(idParam map[string]any) map[string]any {
 		"/2/users/{id}/bookmarks/{tweet_id}": map[string]any{"delete": v2WriteOp("Remove a bookmark", false, idParam, v2PathParam("tweet_id", "The bookmarked tweet id."))},
 		"/2/users/{id}/muting":               map[string]any{"post": v2WriteOp("Mute a user", true, idParam)},
 		"/2/users/{id}/muting/{target_id}":   map[string]any{"delete": v2WriteOp("Unmute a user", false, idParam, v2PathParam("target_id", "The muted user id."))},
+		"/2/lists":                           map[string]any{"post": v2WriteOp("Create a list", true)},
+		"/2/lists/{id}": map[string]any{
+			"get":    v2Op("Look up a list by id", idParam),
+			"put":    v2WriteOp("Update a list", true, idParam),
+			"delete": v2WriteOp("Delete a list", false, idParam),
+		},
+		"/2/lists/{id}/tweets":            map[string]any{"get": v2ListOp("A list's tweets", idParam)},
+		"/2/lists/{id}/members":           map[string]any{"get": v2ListOp("A list's members", idParam), "post": v2WriteOp("Add a list member", true, idParam)},
+		"/2/lists/{id}/members/{user_id}": map[string]any{"delete": v2WriteOp("Remove a list member", false, idParam, v2PathParam("user_id", "The member's user id."))},
 	}
 }
 

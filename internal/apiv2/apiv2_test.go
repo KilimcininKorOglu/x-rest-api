@@ -199,6 +199,31 @@ func TestMissingErrorsCaseInsensitiveUsername(t *testing.T) {
 	}
 }
 
+func TestListObjectSelectedFields(t *testing.T) {
+	l := xapi.List{
+		ID: "77", Name: "friends", Description: "close friends",
+		CreatedBy: "12", MemberCount: 4, SubscriberCount: 9, Private: true,
+	}
+	obj := ListObject(l, parseFrom(t, "list.fields=description,owner_id,private,member_count,follower_count"))
+	if obj["id"] != "77" || obj["name"] != "friends" {
+		t.Fatalf("default list fields wrong: %v", obj)
+	}
+	if obj["description"] != "close friends" || obj["owner_id"] != "12" {
+		t.Errorf("selected list scalars wrong: %v", obj)
+	}
+	if obj["private"] != true || obj["member_count"] != 4 || obj["follower_count"] != 9 {
+		t.Errorf("list counts/flags wrong: %v", obj)
+	}
+}
+
+func TestListObjectDefaultSet(t *testing.T) {
+	l := xapi.List{ID: "1", Name: "n", Description: "d", MemberCount: 5}
+	obj := ListObject(l, parseFrom(t, ""))
+	if len(obj) != 2 || obj["id"] != "1" || obj["name"] != "n" {
+		t.Errorf("default list set must be id+name only: %v", obj)
+	}
+}
+
 func TestNotFoundEnvelope(t *testing.T) {
 	env := NotFound("tweet", "id", "123")
 	if len(env.Errors) != 1 {

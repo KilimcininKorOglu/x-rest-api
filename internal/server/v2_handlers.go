@@ -27,6 +27,40 @@ func (s *Server) mountV2(v chi.Router) {
 	v.Get("/users/{id}/following", s.v2FollowingList)
 	v.Get("/users/{id}/timelines/reverse_chronological", s.v2ReverseChronological)
 	v.Get("/users/{id}/bookmarks", s.v2Bookmarks)
+	v.Get("/lists/{id}", s.v2List)
+	v.Get("/lists/{id}/tweets", s.v2ListTweets)
+	v.Get("/lists/{id}/members", s.v2ListMembers)
+}
+
+// v2List serves GET /2/lists/{id}.
+func (s *Server) v2List(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	sel := apiv2.ParseSelection(r.URL.Query())
+	s.serveV2(w, r, false, "ListByRestId", func(c *xapi.XClient) (apiv2.Envelope, error) {
+		l, err := c.ListInfo(id)
+		if err != nil {
+			return apiv2.Envelope{}, err
+		}
+		return apiv2.Envelope{Data: apiv2.ListObject(*l, sel)}, nil
+	})
+}
+
+// v2ListTweets serves GET /2/lists/{id}/tweets.
+func (s *Server) v2ListTweets(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	s.v2TweetsPage(w, r, false, "ListLatestTweetsTimeline",
+		func(c *xapi.XClient, max int, cur string) ([]xapi.Tweet, string, error) {
+			return c.ListTweets(id, max, cur)
+		})
+}
+
+// v2ListMembers serves GET /2/lists/{id}/members.
+func (s *Server) v2ListMembers(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	s.v2UsersPage(w, r, false, "ListMembers",
+		func(c *xapi.XClient, max int, cur string) ([]xapi.XUser, string, error) {
+			return c.ListMembers(id, max, cur)
+		})
 }
 
 // v2Bookmarks serves GET /2/users/{id}/bookmarks, the account's bookmarked tweets.

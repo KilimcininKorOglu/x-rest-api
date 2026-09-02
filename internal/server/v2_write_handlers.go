@@ -25,6 +25,11 @@ func (s *Server) mountV2Write(v chi.Router) {
 	v.Delete("/users/{id}/bookmarks/{tweet_id}", s.v2Unbookmark)
 	v.Post("/users/{id}/muting", s.v2Mute)
 	v.Delete("/users/{id}/muting/{target_id}", s.v2Unmute)
+	v.Post("/lists", s.v2CreateList)
+	v.Put("/lists/{id}", s.v2UpdateList)
+	v.Delete("/lists/{id}", s.v2DeleteList)
+	v.Post("/lists/{id}/members", s.v2ListAddMember)
+	v.Delete("/lists/{id}/members/{user_id}", s.v2ListRemoveMember)
 }
 
 // v2TweetIDBody is the JSON body for the like/retweet POST endpoints.
@@ -153,6 +158,95 @@ func (s *Server) v2Unmute(w http.ResponseWriter, r *http.Request) {
 	s.v2WriteResult(w, r, "UnmuteUser",
 		func(c *xapi.XClient) error { return c.Unmute(target) },
 		map[string]any{"muting": false})
+}
+
+// v2CreateListBody is the JSON body for POST /2/lists.
+type v2CreateListBody struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Private     bool   `json:"private"`
+}
+
+// v2CreateList serves POST /2/lists.
+func (s *Server) v2CreateList(w http.ResponseWriter, r *http.Request) {
+	var body v2CreateListBody
+	if !decodeV2Body(w, r, &body) {
+		return
+	}
+	if body.Name == "" {
+		writeJSON(w, http.StatusBadRequest, apiv2.Invalid("name", "The `name` field is required."))
+		return
+	}
+	acct, ok := s.writeGuardV2(w, r, "CreateList")
+	if !ok {
+		return
+	}
+	cli := s.clientFor(acct)
+	id, err := cli.CreateList(body.Name, body.Description, body.Private)
+	s.pool.Observe(acct.ID, "CreateList", cli.RateLimit())
+	if err != nil {
+		s.failWriteV2(w, r, acct.ID, "CreateList", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, apiv2.Envelope{Data: map[string]any{"id": id, "name": body.Name}})
+}
+
+// v2UpdateListBody is the JSON body for PUT /2/lists/{id}; nil fields are left
+// unchanged.
+type v2UpdateListBody struct {
+	Name        *string `json:"name"`
+	Description *string `json:"description"`
+	Private     *bool   `json:"private"`
+}
+
+// v2UpdateList serves PUT /2/lists/{id}.
+func (s *Server) v2UpdateList(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	var body v2UpdateListBody
+	if !decodeV2Body(w, r, &body) {
+		return
+	}
+	s.v2WriteResult(w, r, "UpdateList",
+		func(c *xapi.XClient) error { return c.UpdateList(id, body.Name, body.Description, body.Private) },
+		map[string]any{"updated": true})
+}
+
+// v2DeleteList serves DELETE /2/lists/{id}.
+func (s *Server) v2DeleteList(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	s.v2WriteResult(w, r, "DeleteList",
+		func(c *xapi.XClient) error { return c.DeleteList(id) },
+		map[string]any{"deleted": true})
+}
+
+// v2UserIDBody is the JSON body for the list add-member endpoint.
+type v2UserIDBody struct {
+	UserID string `json:"user_id"`
+}
+
+// v2ListAddMember serves POST /2/lists/{id}/members.
+func (s *Server) v2ListAddMember(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	var body v2UserIDBody
+	if !decodeV2Body(w, r, &body) {
+		return
+	}
+	if body.UserID == "" {
+		writeJSON(w, http.StatusBadRequest, apiv2.Invalid("user_id", "The `user_id` field is required."))
+		return
+	}
+	s.v2WriteResult(w, r, "ListAddMember",
+		func(c *xapi.XClient) error { return c.ListAddMember(id, body.UserID) },
+		map[string]any{"is_member": true})
+}
+
+// v2ListRemoveMember serves DELETE /2/lists/{id}/members/{user_id}.
+func (s *Server) v2ListRemoveMember(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	uid := chi.URLParam(r, "user_id")
+	s.v2WriteResult(w, r, "ListRemoveMember",
+		func(c *xapi.XClient) error { return c.ListRemoveMember(id, uid) },
+		map[string]any{"is_member": false})
 }
 
 // v2CreateTweetBody is the JSON body for POST /2/tweets, mirroring the X API v2
