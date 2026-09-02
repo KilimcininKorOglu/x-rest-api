@@ -137,7 +137,28 @@ func (c *XClient) callForm(op, apiURL string, form url.Values) (map[string]any, 
 	// Override in place with the lowercase key headers() uses; Header.Set would add
 	// a second canonical "Content-Type" that x.com may read instead.
 	req.Header["content-type"] = []string{"application/x-www-form-urlencoded"}
+	return c.doForm(op, req)
+}
 
+// callFormGet sends a GET to a legacy REST 1.1 endpoint with query params (DM
+// reads), reusing the session auth headers. It is the GET counterpart of callForm.
+func (c *XClient) callFormGet(op, apiURL string, params url.Values) (map[string]any, error) {
+	u := apiURL
+	if len(params) > 0 {
+		u += "?" + params.Encode()
+	}
+	req, err := http.NewRequest(http.MethodGet, u, nil)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	req.Header = c.sess.headers(c.acct, "en", "")
+	return c.doForm(op, req)
+}
+
+// doForm sends a prepared REST request and decodes the JSON response, sharing
+// rate-limit and upstream-error handling between the form-POST and query-GET
+// paths. An empty body decodes to a nil map (some deletes return no content).
+func (c *XClient) doForm(op string, req *http.Request) (map[string]any, error) {
 	resp, err := c.sess.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
@@ -156,8 +177,10 @@ func (c *XClient) callForm(op, apiURL string, form url.Values) (map[string]any, 
 		}
 	}
 	var out map[string]any
-	if err := json.Unmarshal(body, &out); err != nil {
-		return nil, fmt.Errorf("%s: decode json: %w", op, err)
+	if len(body) > 0 {
+		if err := json.Unmarshal(body, &out); err != nil {
+			return nil, fmt.Errorf("%s: decode json: %w", op, err)
+		}
 	}
 	return out, nil
 }

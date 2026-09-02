@@ -225,6 +225,13 @@ func (s *Server) v1Routes() []apiRoute {
 			{Name: "query", In: "query", Type: "string", Desc: "Location query."},
 		}), s.jobLocations),
 		with(route("GET", "/v1/jobs/{id}", "Job details by id", xapi.Job{}, nil), s.jobDetails),
+		with(route("GET", "/v1/dm/inbox", "Direct message inbox (account-scoped)", xapi.Inbox{}, []openapi.Param{
+			{Name: "cursor", In: "query", Type: "string", Desc: "Inbox pagination cursor (min_entry_id from a previous page)."},
+		}), s.dmInbox),
+		with(route("GET", "/v1/dm/conversations/{id}", "A DM conversation (account-scoped)", xapi.Conversation{}, []openapi.Param{
+			{Name: "cursor", In: "query", Type: "string", Desc: "Load older history (oldest message id from a previous page)."},
+		}), s.dmConversation),
+		writeRoute(route("DELETE", "/v1/dm/conversations/{id}", "Delete (leave) a DM conversation", writeOK, nil), nil, 200, s.deleteConversation),
 		with(route("GET", "/v1/bookmarks/folders", "Bookmark folders (raw, account-scoped)", map[string]any{}, []openapi.Param{
 			{Name: "cursor", In: "query", Type: "string", Desc: "Pagination cursor."},
 		}), s.bookmarkFolders),

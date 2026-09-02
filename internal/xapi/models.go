@@ -186,6 +186,43 @@ func tweetURL(screenName, restID string) string {
 	return "https://x.com/i/status/" + restID
 }
 
+// DirectMessage is one message in a DM conversation.
+type DirectMessage struct {
+	ID             string   `json:"id"`
+	ConversationID string   `json:"conversation_id,omitempty"`
+	SenderID       string   `json:"sender_id"`
+	RecipientID    string   `json:"recipient_id,omitempty"`
+	Text           string   `json:"text"`
+	CreatedAt      string   `json:"created_at,omitempty"`
+	EditCount      int      `json:"edit_count,omitempty"`
+	MediaURLs      []string `json:"media_urls,omitempty"`
+}
+
+// Conversation is a DM conversation with its loaded messages.
+type Conversation struct {
+	ID                    string          `json:"id"`
+	Type                  string          `json:"type,omitempty"`
+	Name                  string          `json:"name,omitempty"`
+	AvatarURL             string          `json:"avatar_url,omitempty"`
+	Participants          []string        `json:"participants,omitempty"`
+	Trusted               bool            `json:"trusted,omitempty"`
+	Muted                 bool            `json:"muted,omitempty"`
+	NotificationsDisabled bool            `json:"notifications_disabled,omitempty"`
+	HasMore               bool            `json:"has_more,omitempty"`
+	LastActivityAt        string          `json:"last_activity_at,omitempty"`
+	LastMessageID         string          `json:"last_message_id,omitempty"`
+	Messages              []DirectMessage `json:"messages,omitempty"`
+}
+
+// Inbox is the DM inbox: conversations plus paging/seen markers.
+type Inbox struct {
+	Conversations            []Conversation `json:"conversations"`
+	Cursor                   string         `json:"cursor,omitempty"`
+	LastSeenEventID          string         `json:"last_seen_event_id,omitempty"`
+	TrustedLastSeenEventID   string         `json:"trusted_last_seen_event_id,omitempty"`
+	UntrustedLastSeenEventID string         `json:"untrusted_last_seen_event_id,omitempty"`
+}
+
 // Job is an X Jobs posting.
 type Job struct {
 	ID                 string      `json:"id"`

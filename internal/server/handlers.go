@@ -844,6 +844,24 @@ func (s *Server) analytics(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// dmInbox serves the account's DM inbox (account-scoped). A cursor pages forward.
+func (s *Server) dmInbox(w http.ResponseWriter, r *http.Request) {
+	cursor := cursorParam(r)
+	s.serveRead(w, r, true, "DMInboxInitial", func(c *xapi.XClient) (any, string, error) {
+		inb, err := c.Inbox(cursor)
+		return inb, "", err
+	})
+}
+
+// dmConversation serves one DM conversation's messages (account-scoped).
+func (s *Server) dmConversation(w http.ResponseWriter, r *http.Request) {
+	id, cursor := chi.URLParam(r, "id"), cursorParam(r)
+	s.serveRead(w, r, true, "DMConversation", func(c *xapi.XClient) (any, string, error) {
+		conv, err := c.Conversation(id, cursor)
+		return conv, "", err
+	})
+}
+
 // jobSearch searches X Jobs from structured query params.
 func (s *Server) jobSearch(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()

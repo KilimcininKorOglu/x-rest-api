@@ -294,6 +294,10 @@ func (s *Server) muteList(w http.ResponseWriter, r *http.Request) {
 	s.actWrite(w, r, "MuteList", "muted", (*xapi.XClient).MuteList)
 }
 
+func (s *Server) deleteConversation(w http.ResponseWriter, r *http.Request) {
+	s.actWrite(w, r, "DMDeleteConversation", "deleted", (*xapi.XClient).DeleteConversation)
+}
+
 func (s *Server) unmuteList(w http.ResponseWriter, r *http.Request) {
 	s.actWrite(w, r, "UnmuteList", "unmuted", (*xapi.XClient).UnmuteList)
 }
