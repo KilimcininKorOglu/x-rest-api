@@ -183,6 +183,121 @@ func (s *Server) deleteBookmark(w http.ResponseWriter, r *http.Request) {
 	s.actWrite(w, r, "DeleteBookmark", "unbookmarked", (*xapi.XClient).DeleteBookmark)
 }
 
+// createListBody is the JSON body for POST /v1/lists.
+type createListBody struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	IsPrivate   bool   `json:"is_private"`
+}
+
+// updateListBody is the JSON body for PATCH /v1/lists/{id}; nil fields are left
+// unchanged.
+type updateListBody struct {
+	Name        *string `json:"name"`
+	Description *string `json:"description"`
+	IsPrivate   *bool   `json:"is_private"`
+}
+
+// listMemberBody is the JSON body for POST /v1/lists/{id}/members.
+type listMemberBody struct {
+	UserID string `json:"user_id"`
+}
+
+func (s *Server) createList(w http.ResponseWriter, r *http.Request) {
+	var body createListBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	if body.Name == "" {
+		writeError(w, http.StatusBadRequest, "provide name")
+		return
+	}
+	acct, ok := s.writeGuard(w, r, "CreateList")
+	if !ok {
+		return
+	}
+	cli := s.clientFor(acct)
+	id, err := cli.CreateList(body.Name, body.Description, body.IsPrivate)
+	s.pool.Observe(acct.ID, "CreateList", cli.RateLimit())
+	if err != nil {
+		s.failWrite(w, r, acct.ID, "CreateList", err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, map[string]any{"data": map[string]string{"id": id}})
+}
+
+func (s *Server) deleteList(w http.ResponseWriter, r *http.Request) {
+	s.actWrite(w, r, "DeleteList", "deleted", (*xapi.XClient).DeleteList)
+}
+
+func (s *Server) updateList(w http.ResponseWriter, r *http.Request) {
+	var body updateListBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	acct, ok := s.writeGuard(w, r, "UpdateList")
+	if !ok {
+		return
+	}
+	cli := s.clientFor(acct)
+	err := cli.UpdateList(chi.URLParam(r, "id"), body.Name, body.Description, body.IsPrivate)
+	s.pool.Observe(acct.ID, "UpdateList", cli.RateLimit())
+	if err != nil {
+		s.failWrite(w, r, acct.ID, "UpdateList", err)
+		return
+	}
+	writeData(w, map[string]string{"status": "updated"})
+}
+
+func (s *Server) listAddMember(w http.ResponseWriter, r *http.Request) {
+	var body listMemberBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	if body.UserID == "" {
+		writeError(w, http.StatusBadRequest, "provide user_id")
+		return
+	}
+	acct, ok := s.writeGuard(w, r, "ListAddMember")
+	if !ok {
+		return
+	}
+	cli := s.clientFor(acct)
+	err := cli.ListAddMember(chi.URLParam(r, "id"), body.UserID)
+	s.pool.Observe(acct.ID, "ListAddMember", cli.RateLimit())
+	if err != nil {
+		s.failWrite(w, r, acct.ID, "ListAddMember", err)
+		return
+	}
+	writeData(w, map[string]string{"status": "added"})
+}
+
+func (s *Server) listRemoveMember(w http.ResponseWriter, r *http.Request) {
+	acct, ok := s.writeGuard(w, r, "ListRemoveMember")
+	if !ok {
+		return
+	}
+	cli := s.clientFor(acct)
+	err := cli.ListRemoveMember(chi.URLParam(r, "id"), chi.URLParam(r, "userId"))
+	s.pool.Observe(acct.ID, "ListRemoveMember", cli.RateLimit())
+	if err != nil {
+		s.failWrite(w, r, acct.ID, "ListRemoveMember", err)
+		return
+	}
+	writeData(w, map[string]string{"status": "removed"})
+}
+
+func (s *Server) muteList(w http.ResponseWriter, r *http.Request) {
+	s.actWrite(w, r, "MuteList", "muted", (*xapi.XClient).MuteList)
+}
+
+func (s *Server) unmuteList(w http.ResponseWriter, r *http.Request) {
+	s.actWrite(w, r, "UnmuteList", "unmuted", (*xapi.XClient).UnmuteList)
+}
+
 // scheduleTweetBody is the JSON body for POST /v1/scheduled.
 type scheduleTweetBody struct {
 	Text      string `json:"text"`

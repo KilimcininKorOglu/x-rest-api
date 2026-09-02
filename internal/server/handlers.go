@@ -436,7 +436,11 @@ func sortMode(r *http.Request) string {
 func (s *Server) listInfo(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	s.serveRead(w, r, false, "ListByRestId", func(c *xapi.XClient) (any, string, error) {
-		return rawByVars(c, "ListByRestId", map[string]any{"listId": id}, "", 0)
+		if rawParam(r) {
+			return rawByVars(c, "ListByRestId", map[string]any{"listId": id}, "", 0)
+		}
+		l, err := c.ListInfo(id)
+		return l, "", err
 	})
 }
 

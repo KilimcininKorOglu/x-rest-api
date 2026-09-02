@@ -133,6 +133,73 @@ func (c *XClient) DeleteScheduledTweet(id string) error {
 	return err
 }
 
+// CreateList creates a list and returns its id.
+func (c *XClient) CreateList(name, description string, isPrivate bool) (string, error) {
+	payload, err := c.call("CreateList", map[string]any{
+		"isPrivate": isPrivate, "name": name, "description": description,
+	})
+	if err != nil {
+		return "", err
+	}
+	// The created list arrives under data.create_list or data.list depending on
+	// the schema generation; take id_str from whichever is present.
+	id := asString(dig(payload, "data", "create_list", "id_str"))
+	if id == "" {
+		id = asString(dig(payload, "data", "list", "id_str"))
+	}
+	if id == "" {
+		return "", fmt.Errorf("CreateList: %s", responseErr(payload))
+	}
+	return id, nil
+}
+
+// DeleteList deletes a list by id.
+func (c *XClient) DeleteList(id string) error {
+	_, err := c.call("DeleteList", map[string]any{"listId": id})
+	return err
+}
+
+// UpdateList updates a list's name, description and/or visibility. Only non-nil
+// fields are sent, so a caller can change one attribute without clobbering others.
+func (c *XClient) UpdateList(id string, name, description *string, isPrivate *bool) error {
+	vars := map[string]any{"listId": id}
+	if name != nil {
+		vars["name"] = *name
+	}
+	if description != nil {
+		vars["description"] = *description
+	}
+	if isPrivate != nil {
+		vars["isPrivate"] = *isPrivate
+	}
+	_, err := c.call("UpdateList", vars)
+	return err
+}
+
+// ListAddMember adds a user to a list.
+func (c *XClient) ListAddMember(listID, userID string) error {
+	_, err := c.call("ListAddMember", map[string]any{"listId": listID, "userId": userID})
+	return err
+}
+
+// ListRemoveMember removes a user from a list.
+func (c *XClient) ListRemoveMember(listID, userID string) error {
+	_, err := c.call("ListRemoveMember", map[string]any{"listId": listID, "userId": userID})
+	return err
+}
+
+// MuteList mutes a list by id.
+func (c *XClient) MuteList(id string) error {
+	_, err := c.call("MuteList", map[string]any{"listId": id})
+	return err
+}
+
+// UnmuteList unmutes a list by id.
+func (c *XClient) UnmuteList(id string) error {
+	_, err := c.call("UnmuteList", map[string]any{"listId": id})
+	return err
+}
+
 // CreateNoteTweet posts a long-form tweet (X Premium). When replyToID is set, it
 // posts a reply.
 func (c *XClient) CreateNoteTweet(text, replyToID string) (*Tweet, error) {

@@ -1,8 +1,23 @@
 package xapi
 
+import "fmt"
+
 // List parsing. A List can arrive as a standalone `data.list` (ListByRestId,
 // UpdateList) or as timeline entries whose itemContent carries a `list` object
 // (ListsManagementPageTimeline). Both feed parseList.
+
+// ListInfo returns a single list's metadata (ListByRestId).
+func (c *XClient) ListInfo(id string) (*List, error) {
+	payload, err := c.call("ListByRestId", map[string]any{"listId": id})
+	if err != nil {
+		return nil, err
+	}
+	l := parseList(asMap(dig(payload, "data", "list")))
+	if l == nil {
+		return nil, fmt.Errorf("ListInfo: %s", responseErr(payload))
+	}
+	return l, nil
+}
 
 // parseList builds a List from a raw list object, or nil when it has no id.
 func parseList(raw map[string]any) *List {
