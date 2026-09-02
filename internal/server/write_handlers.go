@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 
@@ -22,37 +23,55 @@ type createTweetBody struct {
 	MediaIDs []string `json:"media_ids"` // ids from POST /v1/media
 }
 
-// writeGuard enforces the write gate and resolves the target account. Writes need
-// the global enable_writes setting AND a can_write key, and a specific account
-// (no rotation), because a write acts as one identity.
-func (s *Server) writeGuard(w http.ResponseWriter, r *http.Request, op string) (store.Account, bool) {
+// errWriteForbidden signals a key without can_write -> 403.
+var errWriteForbidden = errors.New("write forbidden")
+
+// writeAllowed enforces the write gate and resolves the target account without
+// writing a response. Writes need the global enable_writes setting AND a can_write
+// key, and a specific account (no rotation), because a write acts as one identity.
+// It returns errWritesDisabled, errWriteForbidden, or a pickAccount error.
+func (s *Server) writeAllowed(r *http.Request, op string) (store.Account, error) {
 	if !s.store.GetSettingBool(store.SettingEnableWrites, false) {
-		recordErr(r, errWritesDisabled)
-		writeError(w, http.StatusForbidden, "writes are disabled (enable them in the admin panel)")
-		return store.Account{}, false
+		return store.Account{}, errWritesDisabled
 	}
 	ri := getReqInfo(r)
 	if ri == nil || ri.apiKey == nil || !ri.apiKey.CanWrite {
-		writeError(w, http.StatusForbidden, "this API key is not allowed to write")
-		return store.Account{}, false
+		return store.Account{}, errWriteForbidden
 	}
 	acct, _, err := s.pickAccount(r, true, op)
 	if err != nil {
-		s.failPick(w, r, err)
-		return store.Account{}, false
+		return store.Account{}, err
 	}
 	setAccount(r, acct.ID)
-	return acct, true
+	return acct, nil
+}
+
+// writeGuard is writeAllowed with the v1 error response written on refusal.
+func (s *Server) writeGuard(w http.ResponseWriter, r *http.Request, op string) (store.Account, bool) {
+	acct, err := s.writeAllowed(r, op)
+	switch {
+	case err == nil:
+		return acct, true
+	case errors.Is(err, errWritesDisabled):
+		recordErr(r, errWritesDisabled)
+		writeError(w, http.StatusForbidden, "writes are disabled (enable them in the admin panel)")
+	case errors.Is(err, errWriteForbidden):
+		writeError(w, http.StatusForbidden, "this API key is not allowed to write")
+	default:
+		s.failPick(w, r, err)
+	}
+	return store.Account{}, false
 }
 
 func (s *Server) clientFor(acct store.Account) *xapi.XClient {
 	return xapi.NewClientFor(s.sess, toXAPI(acct))
 }
 
-// failWrite reacts to a write's upstream error (writes are pinned, so never
+// applyWriteEffect reacts to a write's upstream error (writes are pinned, so never
 // rotate): a ban disables the account, a rate limit cools it for the op, stale
-// features trigger a refresh; then it writes the error.
-func (s *Server) failWrite(w http.ResponseWriter, r *http.Request, id int64, op string, err error) {
+// features trigger a refresh. It writes no response, so v1 and v2 write layers
+// share the effects.
+func (s *Server) applyWriteEffect(id int64, op string, err error) {
 	if up := asUpstream(err); up != nil {
 		switch classifyUpstream(up, nil) {
 		case kindBan:
@@ -63,6 +82,11 @@ func (s *Server) failWrite(w http.ResponseWriter, r *http.Request, id int64, op 
 			s.triggerRefresh()
 		}
 	}
+}
+
+// failWrite applies the write side effects and writes the v1 error response.
+func (s *Server) failWrite(w http.ResponseWriter, r *http.Request, id int64, op string, err error) {
+	s.applyWriteEffect(id, op, err)
 	fail(w, r, err)
 }
 

@@ -65,6 +65,18 @@ func v2QueryParam(name, desc string) map[string]any {
 	}
 }
 
+// v2EnvelopeResponse is the shared 200 response returning the envelope schema.
+func v2EnvelopeResponse() map[string]any {
+	return map[string]any{
+		"description": "X API v2 response envelope",
+		"content": map[string]any{
+			"application/json": map[string]any{
+				"schema": map[string]any{"$ref": "#/components/schemas/Envelope"},
+			},
+		},
+	}
+}
+
 // v2Op builds one GET operation with the shared field params plus any extras,
 // secured by bearerAuth and returning the envelope schema.
 func v2Op(summary string, extra ...map[string]any) map[string]any {
@@ -77,17 +89,31 @@ func v2Op(summary string, extra ...map[string]any) map[string]any {
 		"tags":       []string{"x-api-v2"},
 		"security":   []any{map[string]any{"bearerAuth": []any{}}},
 		"parameters": params,
-		"responses": map[string]any{
-			"200": map[string]any{
-				"description": "X API v2 response envelope",
-				"content": map[string]any{
-					"application/json": map[string]any{
-						"schema": map[string]any{"$ref": "#/components/schemas/Envelope"},
-					},
-				},
-			},
-		},
+		"responses":  map[string]any{"200": v2EnvelopeResponse()},
 	}
+}
+
+// v2WriteOp builds a write operation (POST/DELETE), optionally with a JSON body
+// and path parameters, secured by bearerAuth and returning the envelope schema.
+func v2WriteOp(summary string, hasBody bool, params ...map[string]any) map[string]any {
+	op := map[string]any{
+		"summary":   summary,
+		"tags":      []string{"x-api-v2"},
+		"security":  []any{map[string]any{"bearerAuth": []any{}}},
+		"responses": map[string]any{"200": v2EnvelopeResponse()},
+	}
+	if len(params) > 0 {
+		op["parameters"] = params
+	}
+	if hasBody {
+		op["requestBody"] = map[string]any{
+			"required": true,
+			"content": map[string]any{
+				"application/json": map[string]any{"schema": map[string]any{"type": "object"}},
+			},
+		}
+	}
+	return op
 }
 
 // v2Document builds the full v2 OpenAPI 3 document.
@@ -116,8 +142,14 @@ func v2Paths(idParam map[string]any) map[string]any {
 		"/2/users/{id}/tweets": map[string]any{"get": v2Op("A user's recent tweets", idParam,
 			v2QueryParam("max_results", "Page size, 5-100 (default 10)."),
 			v2QueryParam("pagination_token", "Cursor from a previous meta.next_token."))},
-		"/2/tweets/{id}": map[string]any{"get": v2Op("Look up a tweet by id", idParam)},
-		"/2/tweets":      map[string]any{"get": v2Op("Look up tweets by id", v2QueryParam("ids", "Comma-separated tweet ids (required)."))},
+		"/2/tweets/{id}": map[string]any{
+			"get":    v2Op("Look up a tweet by id", idParam),
+			"delete": v2WriteOp("Delete a tweet", false, idParam),
+		},
+		"/2/tweets": map[string]any{
+			"get":  v2Op("Look up tweets by id", v2QueryParam("ids", "Comma-separated tweet ids (required).")),
+			"post": v2WriteOp("Create a tweet", true),
+		},
 		"/2/tweets/search/recent": map[string]any{"get": v2Op("Recent tweet search",
 			v2QueryParam("query", "Search query (required)."),
 			v2QueryParam("max_results", "Page size, 5-100 (default 10)."),

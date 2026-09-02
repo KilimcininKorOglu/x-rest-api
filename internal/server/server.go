@@ -374,6 +374,7 @@ func (s *Server) Routes(admin http.Handler) http.Handler {
 		v.Use(s.requestLog)
 		v.Use(s.apiKeyAuth)
 		s.mountV2(v)
+		s.mountV2Write(v)
 	})
 	return r
 }
