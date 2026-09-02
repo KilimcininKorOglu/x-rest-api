@@ -142,6 +142,43 @@ func TestParseUserByScreenName(t *testing.T) {
 	}
 }
 
+// newSchemaUserFixture has an empty legacy block; counts live in
+// relationship_counts/tweet_counts and the bio in profile_bio, as x.com serves
+// on the newer schema.
+const newSchemaUserFixture = `{
+  "data": {"user": {"result": {
+    "__typename": "User", "rest_id": "12", "is_blue_verified": true,
+    "legacy": {},
+    "core": {"screen_name": "jack", "name": "jack", "created_at": "Tue Mar 21 20:50:14 +0000 2006"},
+    "relationship_counts": {"followers": 11936016, "following": 3},
+    "tweet_counts": {"tweets": 30970, "media_tweets": 2974},
+    "profile_bio": {"description": "no state is the best state",
+      "entities": {"description": {"urls": [{"expanded_url": "https://go.dev", "display_url": "go.dev", "url": "https://t.co/x"}]}}}
+  }}}
+}`
+
+func TestParseUserNewSchema(t *testing.T) {
+	u := parseUserByScreenName(decode(t, newSchemaUserFixture))
+	if u == nil {
+		t.Fatal("nil user")
+	}
+	if u.FollowersCount != 11936016 || u.FriendsCount != 3 {
+		t.Errorf("relationship_counts not read: followers=%d friends=%d", u.FollowersCount, u.FriendsCount)
+	}
+	if u.StatusesCount != 30970 || u.MediaCount != 2974 {
+		t.Errorf("tweet_counts not read: statuses=%d media=%d", u.StatusesCount, u.MediaCount)
+	}
+	if u.Description != "no state is the best state" {
+		t.Errorf("profile_bio description not read: %q", u.Description)
+	}
+	if len(u.DescriptionLinks) != 1 || u.DescriptionLinks[0].URL != "https://go.dev" {
+		t.Errorf("profile_bio description links not read: %+v", u.DescriptionLinks)
+	}
+	if u.ScreenName != "jack" || u.CreatedAt == "" || !u.Blue {
+		t.Errorf("core/blue fields wrong: %+v", u)
+	}
+}
+
 // richTweetFixture carries media, entities, a quoted tweet, and a poll card.
 const richTweetFixture = `{
   "data": {"x": {"instructions": [{"type": "TimelineAddEntries", "entries": [

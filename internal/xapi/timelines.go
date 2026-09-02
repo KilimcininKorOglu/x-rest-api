@@ -291,6 +291,16 @@ func nestedResult(t, legacy map[string]any, key string) map[string]any {
 	return asMap(dig(legacy, key, "result"))
 }
 
+// pickCount reads a count from the legacy block when that key is present, else
+// from the newer node, because the two schema generations place counts
+// differently and legacy is empty on the new one.
+func pickCount(legacy map[string]any, legacyKey string, node map[string]any, nodeKey string) int {
+	if v, ok := legacy[legacyKey]; ok {
+		return asInt(v)
+	}
+	return asInt(node[nodeKey])
+}
+
 // parseUserResult turns a user_results.result node into an XUser.
 func parseUserResult(result map[string]any) *XUser {
 	if result == nil {
@@ -314,6 +324,16 @@ func parseUserResult(result map[string]any) *XUser {
 	if createdAt == "" {
 		createdAt = asString(core["created_at"])
 	}
+	// The newer schema drops legacy and moves the bio into profile_bio.
+	bio := asMap(result["profile_bio"])
+	description := asString(legacy["description"])
+	if description == "" {
+		description = asString(bio["description"])
+	}
+	descEntities := asMap(dig(legacy, "entities", "description"))
+	if len(descEntities) == 0 {
+		descEntities = asMap(dig(bio, "entities", "description"))
+	}
 	verified, _ := legacy["verified"].(bool)
 	blue, _ := result["is_blue_verified"].(bool)
 	protected, _ := legacy["protected"].(bool)
@@ -326,17 +346,21 @@ func parseUserResult(result map[string]any) *XUser {
 	if blueType == "" {
 		blueType = asString(legacy["verified_type"])
 	}
+	// followers/following live in relationship_counts and tweet/media counts in
+	// tweet_counts on the newer schema, where legacy is empty.
+	rc := asMap(result["relationship_counts"])
+	tc := asMap(result["tweet_counts"])
 	return &XUser{
 		RestID:           asString(result["rest_id"]),
 		ScreenName:       screenName,
 		Name:             name,
-		Description:      asString(legacy["description"]),
-		FollowersCount:   asInt(legacy["followers_count"]),
-		FriendsCount:     asInt(legacy["friends_count"]),
-		StatusesCount:    asInt(legacy["statuses_count"]),
+		Description:      description,
+		FollowersCount:   pickCount(legacy, "followers_count", rc, "followers"),
+		FriendsCount:     pickCount(legacy, "friends_count", rc, "following"),
+		StatusesCount:    pickCount(legacy, "statuses_count", tc, "tweets"),
 		FavouritesCount:  asInt(legacy["favourites_count"]),
 		ListedCount:      asInt(legacy["listed_count"]),
-		MediaCount:       asInt(legacy["media_count"]),
+		MediaCount:       pickCount(legacy, "media_count", tc, "media_tweets"),
 		Verified:         verified || blue,
 		Blue:             blue,
 		BlueType:         blueType,
@@ -347,7 +371,7 @@ func parseUserResult(result map[string]any) *XUser {
 		ProfileImageURL:  profileImage,
 		ProfileBannerURL: asString(legacy["profile_banner_url"]),
 		PinnedTweetIDs:   stringList(legacy["pinned_tweet_ids_str"]),
-		DescriptionLinks: entityLinks(asMap(dig(legacy, "entities", "description"))),
+		DescriptionLinks: entityLinks(descEntities),
 	}
 }
 
