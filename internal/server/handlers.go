@@ -596,11 +596,19 @@ func (s *Server) usersResolve(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// usersByIDs looks up many profiles in one call (UsersByRestIds).
+// usersByIDs looks up many profiles in one call. ?ids= uses UsersByRestIds (one
+// call); ?handles= fetches each profile with UserByScreenName (one call per handle).
 func (s *Server) usersByIDs(w http.ResponseWriter, r *http.Request) {
-	ids := idsParam(r)
+	ids, handles := idsParam(r), csvParam(r, "handles")
+	if len(ids) == 0 && len(handles) == 0 {
+		writeError(w, http.StatusBadRequest, "provide ids or handles (comma-separated)")
+		return
+	}
 	if len(ids) == 0 {
-		writeError(w, http.StatusBadRequest, "missing required query parameter ids (comma-separated numeric ids)")
+		s.serveRead(w, r, false, "UserByScreenName", func(c *xapi.XClient) (any, string, error) {
+			u, err := c.ProfilesByHandles(handles)
+			return u, "", err
+		})
 		return
 	}
 	s.serveRead(w, r, false, "UsersByRestIds", func(c *xapi.XClient) (any, string, error) {
@@ -609,6 +617,20 @@ func (s *Server) usersByIDs(w http.ResponseWriter, r *http.Request) {
 		}
 		u, err := c.UsersByIDs(ids)
 		return u, "", err
+	})
+}
+
+// usersLatest returns the most recent tweet of each user. ?ids= and ?handles= are
+// both accepted (UserTweets resolves either); one lookup per user.
+func (s *Server) usersLatest(w http.ResponseWriter, r *http.Request) {
+	users := append(idsParam(r), csvParam(r, "handles")...)
+	if len(users) == 0 {
+		writeError(w, http.StatusBadRequest, "provide ids or handles (comma-separated)")
+		return
+	}
+	s.serveRead(w, r, false, "UserTweets", func(c *xapi.XClient) (any, string, error) {
+		t, err := c.LatestTweets(users)
+		return t, "", err
 	})
 }
 

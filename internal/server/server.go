@@ -96,6 +96,19 @@ var resolveParams = []openapi.Param{
 	{Name: "handles", In: "query", Type: "string", Desc: "Comma-separated @handles to map to ids (max 100)."},
 }
 
+// usersByParams documents the batch profile lookup (?ids= or ?handles=).
+var usersByParams = []openapi.Param{
+	{Name: "ids", In: "query", Type: "string", Desc: "Comma-separated numeric ids (max 100)."},
+	{Name: "handles", In: "query", Type: "string", Desc: "Comma-separated @handles (max 100, one lookup each)."},
+	{Name: "raw", In: "query", Type: "boolean", Desc: "Return the unparsed GraphQL response (ids only)."},
+}
+
+// latestParams documents the bulk latest-tweet lookup (?ids= or ?handles=).
+var latestParams = []openapi.Param{
+	{Name: "ids", In: "query", Type: "string", Desc: "Comma-separated numeric ids (max 100)."},
+	{Name: "handles", In: "query", Type: "string", Desc: "Comma-separated @handles (max 100)."},
+}
+
 // searchParams documents the structured-filter search query. q or any filter is
 // enough; the filters render into x.com's rawQuery operator string. withProduct
 // adds the tweets-only product selector.
@@ -178,8 +191,9 @@ func (s *Server) v1Routes() []apiRoute {
 		with(route("GET", "/v1/users/{handle}/about", "Account origin, username history, identity verification", xapi.AccountAbout{}, rawOnlyParams), s.userAbout),
 		with(route("GET", "/v1/users/{handle}/rss", "A user's posts as an RSS 2.0 feed", tweets, rssParams), s.rssTweets("handle", "UserTweets", (*xapi.XClient).UserTweets)),
 
-		with(route("GET", "/v1/users/by", "Look up many profiles by numeric id", []xapi.XUser{}, idsParams), s.usersByIDs),
+		with(route("GET", "/v1/users/by", "Look up many profiles by numeric id or handle", []xapi.XUser{}, usersByParams), s.usersByIDs),
 		with(route("GET", "/v1/users/resolve", "Bulk resolve ids to usernames or handles to ids ({id, username})", []xapi.UserIdentity{}, resolveParams), s.usersResolve),
+		with(route("GET", "/v1/users/latest", "Most recent tweet of each user (by ids or handles)", tweets, latestParams), s.usersLatest),
 
 		with(route("GET", "/v1/tweets/{id}", "Focal tweet with its reply thread", xapi.TweetThread{}, rawOnlyParams), s.getTweet),
 		with(route("GET", "/v1/tweets/{id}/result", "A single tweet without its thread", xapi.Tweet{}, rawOnlyParams), s.getTweetResult),

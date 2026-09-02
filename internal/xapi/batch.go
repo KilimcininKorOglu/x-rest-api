@@ -82,6 +82,51 @@ func (c *XClient) ResolveHandles(handles []string) ([]UserIdentity, error) {
 	return out, nil
 }
 
+// ProfilesByHandles fetches full profiles for many @handles, one UserByScreenName
+// call per handle (x.com has no batch handle lookup). Unknown handles are skipped.
+func (c *XClient) ProfilesByHandles(handles []string) ([]XUser, error) {
+	out := make([]XUser, 0, len(handles))
+	for _, h := range clampIDs(handles) {
+		u, err := c.GetUser(h)
+		if err != nil {
+			return nil, err
+		}
+		if u != nil && u.RestID != "" {
+			out = append(out, *u)
+		}
+	}
+	return out, nil
+}
+
+// LatestTweet returns a user's most recent tweet (handle or numeric id), or nil
+// when the user has no tweets. It reads a single-item timeline page.
+func (c *XClient) LatestTweet(handleOrID string) (*Tweet, error) {
+	tweets, _, err := c.UserTweets(handleOrID, 1, "")
+	if err != nil {
+		return nil, err
+	}
+	if len(tweets) == 0 {
+		return nil, nil
+	}
+	return &tweets[0], nil
+}
+
+// LatestTweets returns the most recent tweet of each user (handle or numeric id),
+// one UserTweets call per user. Users with no tweets are skipped.
+func (c *XClient) LatestTweets(users []string) ([]Tweet, error) {
+	out := make([]Tweet, 0, len(users))
+	for _, u := range clampIDs(users) {
+		t, err := c.LatestTweet(u)
+		if err != nil {
+			return nil, err
+		}
+		if t != nil {
+			out = append(out, *t)
+		}
+	}
+	return out, nil
+}
+
 // TweetsByIDs fetches multiple tweets in one call (TweetResultsByRestIds).
 func (c *XClient) TweetsByIDs(ids []string) ([]Tweet, error) {
 	payload, err := c.call("TweetResultsByRestIds", map[string]any{"tweetIds": clampIDs(ids)})
