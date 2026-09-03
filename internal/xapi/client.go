@@ -451,6 +451,17 @@ func (c *XClient) UserReplies(handle string, count int, cursor string) ([]Tweet,
 	return c.userTimeline("UserTweetsAndReplies", handle, count, cursor)
 }
 
+// UserRepliesOnly returns only a user's replies (the "with_replies" tab's
+// replies-only variant), without their standalone posts.
+func (c *XClient) UserRepliesOnly(handle string, count int, cursor string) ([]Tweet, string, error) {
+	return c.userTimeline("UserRepliesTimeline", handle, count, cursor)
+}
+
+// UserReposts returns the tweets a user has reposted (their "reposts" tab).
+func (c *XClient) UserReposts(handle string, count int, cursor string) ([]Tweet, string, error) {
+	return c.userTimeline("UserRepostsTimeline", handle, count, cursor)
+}
+
 func (c *XClient) UserMedia(handle string, count int, cursor string) ([]Tweet, string, error) {
 	return c.userTimeline("UserMedia", handle, count, cursor)
 }

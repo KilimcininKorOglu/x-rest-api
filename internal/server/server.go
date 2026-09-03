@@ -180,6 +180,8 @@ func (s *Server) v1Routes() []apiRoute {
 		with(route("GET", "/v1/users/{handle}/id", "Resolve one handle or numeric id to {id, username}", xapi.UserIdentity{}, nil), s.userID),
 		list("/v1/users/{handle}/tweets", "A user's posts", s.readTweets("handle", "UserTweets", (*xapi.XClient).UserTweets)),
 		list("/v1/users/{handle}/replies", "A user's posts and replies", s.readTweets("handle", "UserTweetsAndReplies", (*xapi.XClient).UserReplies)),
+		list("/v1/users/{handle}/replies-only", "A user's replies only", s.readTweets("handle", "UserRepliesTimeline", (*xapi.XClient).UserRepliesOnly)),
+		list("/v1/users/{handle}/reposts", "A user's reposts", s.readTweets("handle", "UserRepostsTimeline", (*xapi.XClient).UserReposts)),
 		list("/v1/users/{handle}/media", "A user's media posts", s.readTweets("handle", "UserMedia", (*xapi.XClient).UserMedia)),
 		list("/v1/users/{handle}/highlights", "A user's highlights", s.readTweets("handle", "UserHighlightsTweets", (*xapi.XClient).UserHighlights)),
 		list("/v1/users/{handle}/likes", "A user's liked posts", s.readTweets("handle", "Likes", (*xapi.XClient).Likes)),
