@@ -16,6 +16,17 @@ func (c *XClient) SidebarTrends() ([]Trend, error) {
 	return parseTrends(payload), nil
 }
 
+// ExploreTrends returns the trends on the personalized Explore "For You" page
+// (ExplorePage), including AI-summarized "Today's News" story trends. The page
+// also carries tweets and users; use the raw endpoint to read those.
+func (c *XClient) ExploreTrends() ([]Trend, error) {
+	payload, err := c.call("ExplorePage", map[string]any{})
+	if err != nil {
+		return nil, err
+	}
+	return parseTrends(payload), nil
+}
+
 // parseTrends maps every TimelineTrend itemContent in the timeline to a Trend.
 func parseTrends(payload map[string]any) []Trend {
 	var out []Trend
@@ -37,6 +48,8 @@ func trendFromItem(it map[string]any) Trend {
 		DomainContext:   asString(meta["domain_context"]),
 		MetaDescription: asString(meta["meta_description"]),
 		Query:           trendQuery(it),
+		SocialContext:   asString(dig(it, "social_context", "text")),
+		IsAITrend:       asBool(it["is_ai_trend"]),
 	}
 	if pm := asMap(it["promoted_metadata"]); pm != nil {
 		t.Promoted = true

@@ -355,7 +355,9 @@ type Trend struct {
 	DomainContext        string `json:"domain_context,omitempty"`   // e.g. "Trending in Wonderland"
 	MetaDescription      string `json:"meta_description,omitempty"`  // e.g. "Promoted by acmebrand"
 	Query                string `json:"query,omitempty"`            // exact search term
+	SocialContext        string `json:"social_context,omitempty"`   // e.g. "11 hours ago · News · 2.1K posts"
 	Promoted             bool   `json:"promoted,omitempty"`
+	IsAITrend            bool   `json:"is_ai_trend,omitempty"`      // AI-summarized "Today's News" story
 	AdvertiserScreenName string `json:"advertiser_screen_name,omitempty"` // promoter handle
 }
 

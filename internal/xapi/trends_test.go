@@ -55,3 +55,40 @@ func TestParseTrends(t *testing.T) {
 		t.Errorf("hashtag Query = %q", h.Query)
 	}
 }
+
+// TestParseExploreTrends verifies parseTrends handles the deeper ExplorePage
+// nesting and extracts AI "Today's News" story trends with their social_context.
+func TestParseExploreTrends(t *testing.T) {
+	const raw = `{"data":{"explore_page":{"body":{"initialTimeline":{"timeline":{"timeline":{"instructions":[{"type":"TimelineClearCache"},{"entries":[{"content":{"__typename":"TimelineTimelineItem","itemContent":{"__typename":"TimelineEventSummary","event":{"rest_id":"1"},"title":"Acme Widget"}},"entryId":"eventsummary-1"},{"content":{"__typename":"TimelineTimelineModule","header":{"text":"Today's News"},"items":[{"entryId":"stories-x-trend-1","item":{"itemContent":{"__typename":"TimelineTrend","is_ai_trend":true,"name":"New Feature Ships in Popular App","social_context":{"contextType":"Facepile","text":"11 hours ago · News · 2.1K posts","type":"TimelineGeneralContext"},"trend_url":{"url":"twitter://trending/1"}}}}]},"entryId":"stories-x"},{"content":{"__typename":"TimelineTimelineItem","itemContent":{"__typename":"TimelineTrend","name":"Weather","trend_metadata":{"domain_context":"Trending in Wonderland"},"trend_url":{"url":"twitter://search/?query=Weather&src=trend_click"}}},"entryId":"trend-Weather"},{"content":{"__typename":"TimelineTimelineCursor","cursorType":"Bottom","value":"DAAB"},"entryId":"cursor-bottom-x"}],"type":"TimelineAddEntries"}]}}}}}}}`
+
+	var m map[string]any
+	if err := json.Unmarshal([]byte(raw), &m); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	tr := parseTrends(m)
+	if len(tr) != 2 {
+		t.Fatalf("parseTrends returned %d trends, want 2 (event summary excluded)", len(tr))
+	}
+
+	ai := tr[0]
+	if !ai.IsAITrend {
+		t.Error("AI story trend not flagged IsAITrend")
+	}
+	if ai.Name != "New Feature Ships in Popular App" {
+		t.Errorf("AI Name = %q", ai.Name)
+	}
+	if ai.SocialContext != "11 hours ago · News · 2.1K posts" {
+		t.Errorf("SocialContext = %q", ai.SocialContext)
+	}
+	if ai.Query != ai.Name {
+		t.Errorf("AI Query = %q, want the name (deeplink has no query=)", ai.Query)
+	}
+
+	o := tr[1]
+	if o.Name != "Weather" || o.IsAITrend {
+		t.Errorf("organic trend = %+v", o)
+	}
+	if o.Query != "Weather" {
+		t.Errorf("organic Query = %q", o.Query)
+	}
+}

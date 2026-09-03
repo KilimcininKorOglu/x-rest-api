@@ -136,6 +136,19 @@ func (s *Server) sidebarTrends(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// explore serves GET /v1/explore: the trends on the personalized Explore "For
+// You" page (ExplorePage), including AI "Today's News" stories. raw=true returns
+// the full upstream page (tweets and users included) and paginates.
+func (s *Server) explore(w http.ResponseWriter, r *http.Request) {
+	s.serveRead(w, r, false, "ExplorePage", func(c *xapi.XClient) (any, string, error) {
+		if rawParam(r) {
+			return rawByVars(c, "ExplorePage", map[string]any{}, cursorParam(r), countParam(r))
+		}
+		tr, err := c.ExploreTrends()
+		return asRead(tr, "", err)
+	})
+}
+
 // hiddenReplies serves GET /v1/tweets/{id}/hidden: the hidden replies under the
 // account's tweet (account-scoped, ModeratedTimeline).
 func (s *Server) hiddenReplies(w http.ResponseWriter, r *http.Request) {
