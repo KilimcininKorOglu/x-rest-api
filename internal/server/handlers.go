@@ -124,6 +124,18 @@ func (s *Server) liveSpaces(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// sidebarTrends serves GET /v1/trends/sidebar: the personalized "What's
+// happening" trends (ExploreSidebar). raw=true returns the upstream payload.
+func (s *Server) sidebarTrends(w http.ResponseWriter, r *http.Request) {
+	s.serveRead(w, r, false, "ExploreSidebar", func(c *xapi.XClient) (any, string, error) {
+		if rawParam(r) {
+			return rawByVars(c, "ExploreSidebar", map[string]any{}, "", 0)
+		}
+		tr, err := c.SidebarTrends()
+		return asRead(tr, "", err)
+	})
+}
+
 // hiddenReplies serves GET /v1/tweets/{id}/hidden: the hidden replies under the
 // account's tweet (account-scoped, ModeratedTimeline).
 func (s *Server) hiddenReplies(w http.ResponseWriter, r *http.Request) {

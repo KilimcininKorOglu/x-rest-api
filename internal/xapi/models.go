@@ -347,6 +347,18 @@ type Hashflag struct {
 	IsHashfettiEnabled  bool   `json:"is_hashfetti_enabled"`
 }
 
+// Trend is one trending topic from the explore timeline (ExploreSidebar): its
+// display name, its context line, and the search query x.com issues for it.
+type Trend struct {
+	Name                 string `json:"name"`
+	Description          string `json:"description,omitempty"`      // promoted trend tagline
+	DomainContext        string `json:"domain_context,omitempty"`   // e.g. "Trending in Wonderland"
+	MetaDescription      string `json:"meta_description,omitempty"`  // e.g. "Promoted by acmebrand"
+	Query                string `json:"query,omitempty"`            // exact search term
+	Promoted             bool   `json:"promoted,omitempty"`
+	AdvertiserScreenName string `json:"advertiser_screen_name,omitempty"` // promoter handle
+}
+
 // LiveStreamSource is the playback source of a Space's live audio/video stream.
 type LiveStreamSource struct {
 	Location              string `json:"location,omitempty"`

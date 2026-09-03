@@ -237,6 +237,7 @@ func (s *Server) v1Routes() []apiRoute {
 			{Name: "count", In: "query", Type: "integer", Desc: "Items to return (default 40, max 200)."},
 			{Name: "cursor", In: "query", Type: "string", Desc: "Pagination cursor."},
 		}), s.trends),
+		with(route("GET", "/v1/trends/sidebar", "Personalized \"What's happening\" trends (ExploreSidebar)", []xapi.Trend{}, rawOnlyParams), s.sidebarTrends),
 		with(route("GET", "/v1/notifications", "Notifications timeline (raw, account-scoped)", map[string]any{}, []openapi.Param{
 			{Name: "count", In: "query", Type: "integer", Desc: "Items to return (default 40, max 200)."},
 			{Name: "cursor", In: "query", Type: "string", Desc: "Pagination cursor."},
