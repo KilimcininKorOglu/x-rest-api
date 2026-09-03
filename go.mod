@@ -1,6 +1,6 @@
 module x-rest-api
 
-go 1.26
+go 1.26.6
 
 require (
 	github.com/bogdanfinn/fhttp v0.6.8
