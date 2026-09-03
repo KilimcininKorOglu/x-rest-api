@@ -20,6 +20,18 @@ func (c *XClient) UserArticles(handle, lifecycle string, count int, cursor strin
 
 func articleKey(a Article) string { return a.RestID }
 
+// parseEmbeddedArticle maps an Article carried inline by a tweet node
+// (article.article_results.result), or returns nil when the tweet has none. The
+// embedded node reuses articleFromResult; its author/tweet metadata comes from
+// the parent tweet, so those Article fields stay empty here.
+func parseEmbeddedArticle(t map[string]any) *Article {
+	r := asMap(dig(t, "article", "article_results", "result"))
+	if r == nil {
+		return nil
+	}
+	return articleFromResult(r)
+}
+
 // parseArticles maps the articles_article_mixer_slice items to Article records and
 // returns the slice's bottom cursor.
 func parseArticles(payload map[string]any) ([]Article, string) {

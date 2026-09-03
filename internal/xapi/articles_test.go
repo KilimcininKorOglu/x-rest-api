@@ -48,3 +48,39 @@ func TestParseArticles(t *testing.T) {
 		t.Errorf("cursor = %q", cursor)
 	}
 }
+
+// TestParseTweetEmbeddedArticle verifies parseTweet attaches the inline Article a
+// TweetDetail focal tweet carries under article.article_results.result. The
+// embedded node omits lifecycle/author/tweet metadata, so only the content fields
+// are populated.
+func TestParseTweetEmbeddedArticle(t *testing.T) {
+	const raw = `{"__typename":"Tweet","article":{"article_results":{"result":{"content_state":{"blocks":[{"key":"1edft","text":"First paragraph of the article.","type":"unstyled"},{"key":"b8m9m","text":"Second paragraph of the article.","type":"unstyled"}],"entityMap":[]},"cover_media":{"media_id":"3001","media_info":{"__typename":"ApiImage","original_img_url":"https://pbs.twimg.com/media/EXAMPLE001.jpg"},"media_key":"3_3001"},"id":"ARTICLE1","lifecycle_state":{"modified_at_secs":1770281982},"metadata":{"first_published_at_secs":1770281982},"preview_text":"First paragraph of the article.","rest_id":"1001","title":"Example Article Title"}}},"core":{"user_results":{"result":{"__typename":"User","core":{"screen_name":"alice","name":"Alice"},"rest_id":"111"}}},"legacy":{"id_str":"2001","created_at":"Thu Feb 05 08:59:42 +0000 2026","full_text":"https://t.co/example","lang":"zxx"},"rest_id":"2001"}`
+
+	var m map[string]any
+	if err := json.Unmarshal([]byte(raw), &m); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	tw := parseTweet(m)
+	if tw == nil {
+		t.Fatal("parseTweet returned nil")
+	}
+	if tw.Article == nil {
+		t.Fatal("tw.Article is nil, want the embedded article")
+	}
+	a := tw.Article
+	if a.RestID != "1001" {
+		t.Errorf("Article.RestID = %q", a.RestID)
+	}
+	if a.Title != "Example Article Title" {
+		t.Errorf("Article.Title = %q", a.Title)
+	}
+	if a.CoverImageURL != "https://pbs.twimg.com/media/EXAMPLE001.jpg" {
+		t.Errorf("Article.CoverImageURL = %q", a.CoverImageURL)
+	}
+	if a.FirstPublishedAt != 1770281982 {
+		t.Errorf("Article.FirstPublishedAt = %d", a.FirstPublishedAt)
+	}
+	if !strings.HasPrefix(a.Text, "İngiltere'de şirket kurup") || !strings.Contains(a.Text, "\nKendi tecrübelerim") {
+		t.Errorf("Article.Text not flattened: %q", a.Text)
+	}
+}

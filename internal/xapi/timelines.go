@@ -286,6 +286,7 @@ func parseTweetDepth(result map[string]any, depth int) *Tweet {
 		Links:               entityLinks(asMap(dig(legacy, "entities"))),
 		Media:               parseMedia(legacy),
 		Card:                parseCard(asMap(t["card"])),
+		Article:             parseEmbeddedArticle(t),
 		Place:               parsePlace(asMap(legacy["place"])),
 		Coordinates:         parseCoordinates(legacy),
 		CommunityNote:       parseCommunityNote(t),

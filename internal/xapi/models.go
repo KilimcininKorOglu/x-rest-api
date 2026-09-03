@@ -64,6 +64,7 @@ type Tweet struct {
 	Links               []TextLink   `json:"links,omitempty"`
 	Media               *Media       `json:"media,omitempty"`
 	Card                *Card        `json:"card,omitempty"`
+	Article             *Article     `json:"article,omitempty"` // long-form Article carried by this tweet
 	Place               *Place       `json:"place,omitempty"`
 	Coordinates         *Coordinates `json:"coordinates,omitempty"`
 	Quoted              *Tweet       `json:"quoted,omitempty"`
