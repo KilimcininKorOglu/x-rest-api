@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -147,6 +148,42 @@ func (s *Server) explore(w http.ResponseWriter, r *http.Request) {
 		tr, err := c.ExploreTrends()
 		return asRead(tr, "", err)
 	})
+}
+
+// accountAnalytics serves GET /v1/analytics/overview: the authenticated
+// account's analytics overview (account-scoped, accountOverviewDailyQuery).
+// ?from and ?to bound the current window (RFC3339 or unix-ms; default the last
+// 28 days). raw=true returns the upstream payload with its full daily series.
+func (s *Server) accountAnalytics(w http.ResponseWriter, r *http.Request) {
+	from, to := analyticsRange(r)
+	s.serveRead(w, r, true, "accountOverviewDailyQuery", func(c *xapi.XClient) (any, string, error) {
+		if rawParam(r) {
+			return rawByVars(c, "accountOverviewDailyQuery", xapi.AnalyticsVars(from, to), "", 0)
+		}
+		a, err := c.AccountAnalytics(from, to)
+		return a, "", err
+	})
+}
+
+// analyticsRange resolves the ?from/?to window, defaulting to the last 28 days.
+func analyticsRange(r *http.Request) (time.Time, time.Time) {
+	to := parseTimeParam(r.URL.Query().Get("to"), time.Now().UTC())
+	from := parseTimeParam(r.URL.Query().Get("from"), to.AddDate(0, 0, -28))
+	return from, to
+}
+
+// parseTimeParam reads a time query value as unix-ms or RFC3339, else def.
+func parseTimeParam(s string, def time.Time) time.Time {
+	if s == "" {
+		return def
+	}
+	if ms, err := strconv.ParseInt(s, 10, 64); err == nil {
+		return time.UnixMilli(ms).UTC()
+	}
+	if t, err := time.Parse(time.RFC3339, s); err == nil {
+		return t.UTC()
+	}
+	return def
 }
 
 // hiddenReplies serves GET /v1/tweets/{id}/hidden: the hidden replies under the

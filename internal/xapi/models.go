@@ -361,6 +361,28 @@ type Trend struct {
 	AdvertiserScreenName string `json:"advertiser_screen_name,omitempty"` // promoter handle
 }
 
+// AccountAnalytics is the authenticated account's analytics overview (the
+// /i/account_analytics daily overview). It is account-scoped: every number
+// belongs to the account whose cookies make the call. Engagement counts are
+// summed over each reporting window from the daily series.
+type AccountAnalytics struct {
+	Followers               int             `json:"followers"`
+	VerifiedFollowers       int             `json:"verified_followers"`
+	ActiveFollowers         int             `json:"active_followers"`
+	ActiveVerifiedFollowers int             `json:"active_verified_followers"`
+	Current                 AnalyticsPeriod `json:"current"`
+	Previous                AnalyticsPeriod `json:"previous"`
+}
+
+// AnalyticsPeriod aggregates one reporting window: engagement totals keyed by
+// engagement type (e.g. "Displayed", "Fav", "Reply") plus the follow and
+// unfollow tallies for the window.
+type AnalyticsPeriod struct {
+	Engagements map[string]int64 `json:"engagements"`
+	Follows     int64            `json:"follows"`
+	Unfollows   int64            `json:"unfollows"`
+}
+
 // LiveStreamSource is the playback source of a Space's live audio/video stream.
 type LiveStreamSource struct {
 	Location              string `json:"location,omitempty"`

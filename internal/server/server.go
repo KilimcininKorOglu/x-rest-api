@@ -72,6 +72,14 @@ var rawOnlyParams = []openapi.Param{
 	{Name: "raw", In: "query", Type: "boolean", Desc: "Return the unparsed GraphQL response instead of the flat model."},
 }
 
+// analyticsParams documents the ?from/?to window and ?raw= on the account
+// analytics overview. from/to accept RFC3339 or unix-ms.
+var analyticsParams = []openapi.Param{
+	{Name: "from", In: "query", Type: "string", Desc: "Start of the current window, RFC3339 or unix-ms (default 28 days before to)."},
+	{Name: "to", In: "query", Type: "string", Desc: "End of the current window, RFC3339 or unix-ms (default now)."},
+	{Name: "raw", In: "query", Type: "boolean", Desc: "Return the unparsed GraphQL response instead of the flat model."},
+}
+
 // rssParams documents the ?count= query on RSS feed endpoints (raw/csv/cursor do
 // not apply; the feed is always the first page as RSS 2.0 XML).
 var rssParams = []openapi.Param{
@@ -241,6 +249,7 @@ func (s *Server) v1Routes() []apiRoute {
 		}), s.trends),
 		with(route("GET", "/v1/trends/sidebar", "Personalized \"What's happening\" trends (ExploreSidebar)", []xapi.Trend{}, rawOnlyParams), s.sidebarTrends),
 		with(route("GET", "/v1/explore", "Explore \"For You\" trends, incl. AI news stories (ExplorePage)", []xapi.Trend{}, countParams), s.explore),
+		with(route("GET", "/v1/analytics/overview", "Your account analytics overview (account-scoped)", xapi.AccountAnalytics{}, analyticsParams), s.accountAnalytics),
 		with(route("GET", "/v1/notifications", "Notifications timeline (raw, account-scoped)", map[string]any{}, []openapi.Param{
 			{Name: "count", In: "query", Type: "integer", Desc: "Items to return (default 40, max 200)."},
 			{Name: "cursor", In: "query", Type: "string", Desc: "Pagination cursor."},
