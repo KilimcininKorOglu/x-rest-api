@@ -41,7 +41,7 @@ func TestParseArticles(t *testing.T) {
 	if a.FirstPublishedAt != 1770281982 {
 		t.Errorf("FirstPublishedAt = %d", a.FirstPublishedAt)
 	}
-	if !strings.HasPrefix(a.Text, "İngiltere'de şirket kurup") || !strings.Contains(a.Text, "\nKendi tecrübelerim") {
+	if !strings.HasPrefix(a.Text, "First paragraph") || !strings.Contains(a.Text, "\nSecond paragraph") {
 		t.Errorf("Text not flattened correctly: %q", a.Text)
 	}
 	if cursor != "DAACCgABAAAAAAAAAAAIAAIAAAABAAA" {
@@ -80,7 +80,7 @@ func TestParseTweetEmbeddedArticle(t *testing.T) {
 	if a.FirstPublishedAt != 1770281982 {
 		t.Errorf("Article.FirstPublishedAt = %d", a.FirstPublishedAt)
 	}
-	if !strings.HasPrefix(a.Text, "İngiltere'de şirket kurup") || !strings.Contains(a.Text, "\nKendi tecrübelerim") {
+	if !strings.HasPrefix(a.Text, "First paragraph") || !strings.Contains(a.Text, "\nSecond paragraph") {
 		t.Errorf("Article.Text not flattened: %q", a.Text)
 	}
 }
