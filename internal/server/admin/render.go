@@ -5,6 +5,7 @@ import (
 	"embed"
 	"html/template"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -66,7 +67,7 @@ func (h *Handler) render(w http.ResponseWriter, r *http.Request, page string, da
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	buf.WriteTo(w)
+	_, _ = buf.WriteTo(w)
 }
 
 // renderPartial executes a single named template (for htmx swaps).
@@ -98,11 +99,19 @@ func (h *Handler) baseData(w http.ResponseWriter, r *http.Request, data map[stri
 	return data
 }
 
+// secureCookie reports whether admin cookies should carry the Secure flag: true
+// when the request arrived over TLS directly or through a TLS-terminating proxy
+// (X-Forwarded-Proto: https), so the panel still works on plain HTTP in dev.
+func secureCookie(r *http.Request) bool {
+	return r.TLS != nil || strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https")
+}
+
 // setFlash stores a one-shot message in a cookie (type is "ok" or "err").
-func setFlash(w http.ResponseWriter, typ, msg string) {
+func setFlash(w http.ResponseWriter, r *http.Request, typ, msg string) {
+	// #nosec G124 -- Secure is set at runtime via secureCookie(r); HttpOnly and SameSite are always on.
 	http.SetCookie(w, &http.Cookie{
 		Name: "flash", Value: typ + "|" + msg, Path: "/admin",
-		HttpOnly: true, SameSite: http.SameSiteLaxMode,
+		HttpOnly: true, SameSite: http.SameSiteLaxMode, Secure: secureCookie(r),
 	})
 }
 
@@ -112,7 +121,8 @@ func readFlash(w http.ResponseWriter, r *http.Request) map[string]string {
 	if err != nil || c.Value == "" {
 		return nil
 	}
-	http.SetCookie(w, &http.Cookie{Name: "flash", Value: "", Path: "/admin", MaxAge: -1})
+	// #nosec G124 -- Secure is set at runtime via secureCookie(r); HttpOnly and SameSite are always on.
+	http.SetCookie(w, &http.Cookie{Name: "flash", Value: "", Path: "/admin", MaxAge: -1, HttpOnly: true, SameSite: http.SameSiteLaxMode, Secure: secureCookie(r)})
 	typ, msg, ok := splitFlash(c.Value)
 	if !ok {
 		return nil

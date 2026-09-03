@@ -26,7 +26,7 @@ func (s *Store) ListAvailableAccountsForOp(op string) ([]Account, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	return collectAccounts(rows)
 }
 
@@ -48,7 +48,7 @@ func (s *Store) ActiveLocksByAccount() (map[int64][]AccountLock, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	out := map[int64][]AccountLock{}
 	for rows.Next() {
 		var id int64

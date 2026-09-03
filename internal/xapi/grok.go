@@ -146,7 +146,7 @@ func parseGrokResponse(body []byte, conversationID string, history []GrokMessage
 // skipping any line that does not decode.
 func grokChunks(body []byte) []map[string]any {
 	var chunks []map[string]any
-	for _, line := range bytes.Split(body, []byte("\n")) {
+	for line := range bytes.SplitSeq(body, []byte("\n")) {
 		line = bytes.TrimSpace(line)
 		if len(line) == 0 {
 			continue

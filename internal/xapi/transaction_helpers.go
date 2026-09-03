@@ -90,7 +90,7 @@ func floatToHex(x float64) string {
 		quotient = int(x / 16)
 		remainder := int(x - float64(quotient)*16)
 		if remainder > 9 {
-			result = append([]string{string(rune(remainder + 55))}, result...)
+			result = append([]string{string(rune(remainder + 55))}, result...) // #nosec G115 -- remainder is 0-15 (hex digit)
 		} else {
 			result = append([]string{strconv.Itoa(remainder)}, result...)
 		}
@@ -105,7 +105,7 @@ func floatToHex(x float64) string {
 		integer := int(fraction)
 		fraction -= float64(integer)
 		if integer > 9 {
-			result = append(result, string(rune(integer+55)))
+			result = append(result, string(rune(integer+55))) // #nosec G115 -- integer is 0-15 (hex digit)
 		} else {
 			result = append(result, strconv.Itoa(integer))
 		}

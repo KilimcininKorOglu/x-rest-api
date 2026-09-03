@@ -29,7 +29,7 @@ func (s *Store) AllQueryIDs() (map[string]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	out := map[string]string{}
 	for rows.Next() {
 		var op, qid string
@@ -47,7 +47,7 @@ func (s *Store) ListQueryIDs() ([]QueryIDOverride, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var out []QueryIDOverride
 	for rows.Next() {
 		var o QueryIDOverride

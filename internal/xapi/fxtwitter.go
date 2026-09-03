@@ -123,7 +123,7 @@ func (s *Session) getFxJSON(url string, out any) error {
 	if err != nil {
 		return fmt.Errorf("fxtwitter: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err

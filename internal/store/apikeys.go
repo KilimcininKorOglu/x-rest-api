@@ -5,7 +5,8 @@ import (
 	"time"
 )
 
-const apiKeyCols = `id, name, key, enabled, can_write, bound_account_id, last_used_at, created_at`
+// #nosec G101 -- SQL column-name list, not a hardcoded credential.
+const apiKeyCols = `id, name, key, enabled, can_write, bound_account_id, last_used_at, created_at` // #nosec G101
 
 func scanAPIKey(sc interface{ Scan(...any) error }) (APIKey, error) {
 	var k APIKey
@@ -44,7 +45,7 @@ func (s *Store) ListAPIKeys() ([]APIKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var out []APIKey
 	for rows.Next() {
 		k, err := scanAPIKey(rows)

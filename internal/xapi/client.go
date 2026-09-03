@@ -104,7 +104,7 @@ func (c *XClient) call(op string, variables map[string]any) (map[string]any, err
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	c.rateLimit = parseRateLimit(resp.Header)
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -163,7 +163,7 @@ func (c *XClient) doRaw(op string, req *http.Request) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	c.rateLimit = parseRateLimit(resp.Header)
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

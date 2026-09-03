@@ -113,7 +113,7 @@ func (h *Handler) setupSubmit(w http.ResponseWriter, r *http.Request) {
 	user := r.FormValue("username")
 	pass := r.FormValue("password")
 	if user == "" || pass == "" || pass != r.FormValue("password2") {
-		setFlash(w, "err", "check the username and matching passwords")
+		setFlash(w, r, "err", "check the username and matching passwords")
 		http.Redirect(w, r, "/admin/setup", http.StatusFound)
 		return
 	}
@@ -127,7 +127,7 @@ func (h *Handler) setupSubmit(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	h.startSession(w, id)
+	h.startSession(w, r, id)
 	http.Redirect(w, r, "/admin", http.StatusFound)
 }
 
@@ -144,11 +144,11 @@ func (h *Handler) loginForm(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) loginSubmit(w http.ResponseWriter, r *http.Request) {
 	u, err := h.st.GetAdminByUsername(r.FormValue("username"))
 	if err != nil || bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(r.FormValue("password"))) != nil {
-		setFlash(w, "err", "invalid credentials")
+		setFlash(w, r, "err", "invalid credentials")
 		http.Redirect(w, r, "/admin/login", http.StatusFound)
 		return
 	}
-	h.startSession(w, u.ID)
+	h.startSession(w, r, u.ID)
 	http.Redirect(w, r, "/admin", http.StatusFound)
 }
 
@@ -156,20 +156,22 @@ func (h *Handler) logout(w http.ResponseWriter, r *http.Request) {
 	if c, err := r.Cookie(sessionCookie); err == nil {
 		_ = h.st.DeleteSession(c.Value)
 	}
-	http.SetCookie(w, &http.Cookie{Name: sessionCookie, Value: "", Path: "/", MaxAge: -1})
+	// #nosec G124 -- Secure is set at runtime via secureCookie(r); HttpOnly and SameSite are always on.
+	http.SetCookie(w, &http.Cookie{Name: sessionCookie, Value: "", Path: "/", MaxAge: -1, HttpOnly: true, SameSite: http.SameSiteLaxMode, Secure: secureCookie(r)})
 	http.Redirect(w, r, "/admin/login", http.StatusFound)
 }
 
 // startSession creates a server-side session and sets the cookie.
-func (h *Handler) startSession(w http.ResponseWriter, adminID int64) {
+func (h *Handler) startSession(w http.ResponseWriter, r *http.Request, adminID int64) {
 	id := newToken()
 	if err := h.st.CreateSession(id, adminID, time.Now().Add(sessionTTL)); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	// #nosec G124 -- Secure is set at runtime via secureCookie(r); HttpOnly and SameSite are always on.
 	http.SetCookie(w, &http.Cookie{
 		Name: sessionCookie, Value: id, Path: "/",
-		HttpOnly: true, SameSite: http.SameSiteLaxMode, Expires: time.Now().Add(sessionTTL),
+		HttpOnly: true, SameSite: http.SameSiteLaxMode, Expires: time.Now().Add(sessionTTL), Secure: secureCookie(r),
 	})
 }
 

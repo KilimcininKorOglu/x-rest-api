@@ -181,7 +181,7 @@ func (c *XClient) doUpload(op string, req *http.Request) (map[string]any, error)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	c.rateLimit = parseRateLimit(resp.Header)
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

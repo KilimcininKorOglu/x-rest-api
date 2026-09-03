@@ -588,7 +588,7 @@ func (s *Server) uploadMedia(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "missing multipart file field 'file'")
 		return
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 	data, err := io.ReadAll(io.LimitReader(file, maxMediaBytes))
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "cannot read uploaded file")

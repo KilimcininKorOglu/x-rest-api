@@ -33,7 +33,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	defer st.Close()
+	defer func() { _ = st.Close() }()
 
 	sess, err := newSession(st)
 	if err != nil {

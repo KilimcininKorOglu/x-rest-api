@@ -32,7 +32,7 @@ func Open(path string) (*Store, error) {
 
 	s := &Store{db: db}
 	if err := s.migrate(); err != nil {
-		db.Close()
+		_ = db.Close()
 		return nil, err
 	}
 	if err := os.Chmod(path, 0o600); err != nil {

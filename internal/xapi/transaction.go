@@ -125,7 +125,7 @@ func (g *txGen) fetch(url string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
@@ -178,7 +178,9 @@ func (g *txGen) generate(method, path string) string {
 	buf = append(buf, sum[:16]...)
 	buf = append(buf, additionalRandom)
 
-	randNum := byte(rand.Intn(256))
+	// Non-security XOR mask mirroring x.com's client JS (Math.random); the value
+	// 0-255 fits a byte exactly, so neither the weak RNG nor the conversion is a risk.
+	randNum := byte(rand.Intn(256)) // #nosec G404 G115
 	out := make([]byte, 0, len(buf)+1)
 	out = append(out, randNum)
 	for _, b := range buf {

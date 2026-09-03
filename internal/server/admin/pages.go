@@ -63,14 +63,14 @@ func (h *Handler) accountCreate(w http.ResponseWriter, r *http.Request) {
 	at := r.FormValue("auth_token")
 	ct0 := r.FormValue("ct0")
 	if label == "" || at == "" || ct0 == "" {
-		setFlash(w, "err", "label, auth_token and ct0 are required")
+		setFlash(w, r, "err", "label, auth_token and ct0 are required")
 		http.Redirect(w, r, "/admin/accounts", http.StatusFound)
 		return
 	}
 	if _, err := h.st.CreateAccount(label, at, ct0, r.FormValue("enabled") != ""); err != nil {
-		setFlash(w, "err", err.Error())
+		setFlash(w, r, "err", err.Error())
 	} else {
-		setFlash(w, "ok", "account added")
+		setFlash(w, r, "ok", "account added")
 	}
 	http.Redirect(w, r, "/admin/accounts", http.StatusFound)
 }
@@ -80,12 +80,12 @@ func (h *Handler) accountToggle(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		err = h.st.UpdateAccount(a.ID, a.Label, a.AuthToken, a.CT0, !a.Enabled)
 	}
-	flashErr(w, err, "account updated")
+	flashErr(w, r, err, "account updated")
 	http.Redirect(w, r, "/admin/accounts", http.StatusFound)
 }
 
 func (h *Handler) accountDelete(w http.ResponseWriter, r *http.Request) {
-	flashErr(w, h.st.DeleteAccount(pathID(r)), "account deleted")
+	flashErr(w, r, h.st.DeleteAccount(pathID(r)), "account deleted")
 	http.Redirect(w, r, "/admin/accounts", http.StatusFound)
 }
 
@@ -101,7 +101,8 @@ func (h *Handler) keysPage(w http.ResponseWriter, r *http.Request) {
 	}
 	if c, err := r.Cookie("newkey"); err == nil && c.Value != "" {
 		data["NewKey"] = c.Value
-		http.SetCookie(w, &http.Cookie{Name: "newkey", Value: "", Path: "/admin", MaxAge: -1})
+		// #nosec G124 -- Secure is set at runtime via secureCookie(r); HttpOnly and SameSite are always on.
+		http.SetCookie(w, &http.Cookie{Name: "newkey", Value: "", Path: "/admin", MaxAge: -1, HttpOnly: true, SameSite: http.SameSiteLaxMode, Secure: secureCookie(r)})
 	}
 	h.render(w, r, "keys", data)
 }
@@ -109,17 +110,18 @@ func (h *Handler) keysPage(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) keyCreate(w http.ResponseWriter, r *http.Request) {
 	name := r.FormValue("name")
 	if name == "" {
-		setFlash(w, "err", "name is required")
+		setFlash(w, r, "err", "name is required")
 		http.Redirect(w, r, "/admin/keys", http.StatusFound)
 		return
 	}
 	key := newToken()
 	if _, err := h.st.CreateAPIKey(name, key, r.FormValue("can_write") != "", boundAccount(r)); err != nil {
-		setFlash(w, "err", err.Error())
+		setFlash(w, r, "err", err.Error())
 		http.Redirect(w, r, "/admin/keys", http.StatusFound)
 		return
 	}
-	http.SetCookie(w, &http.Cookie{Name: "newkey", Value: key, Path: "/admin", HttpOnly: true, SameSite: http.SameSiteLaxMode})
+	// #nosec G124 -- Secure is set at runtime via secureCookie(r); HttpOnly and SameSite are always on.
+	http.SetCookie(w, &http.Cookie{Name: "newkey", Value: key, Path: "/admin", HttpOnly: true, SameSite: http.SameSiteLaxMode, Secure: secureCookie(r)})
 	http.Redirect(w, r, "/admin/keys", http.StatusFound)
 }
 
@@ -128,7 +130,7 @@ func (h *Handler) keyToggle(w http.ResponseWriter, r *http.Request) {
 	id := pathID(r)
 	for _, k := range keys {
 		if k.ID == id {
-			flashErr(w, h.st.UpdateAPIKey(k.ID, k.Name, !k.Enabled, k.CanWrite, k.BoundAccountID), "key updated")
+			flashErr(w, r, h.st.UpdateAPIKey(k.ID, k.Name, !k.Enabled, k.CanWrite, k.BoundAccountID), "key updated")
 			break
 		}
 	}
@@ -136,7 +138,7 @@ func (h *Handler) keyToggle(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) keyDelete(w http.ResponseWriter, r *http.Request) {
-	flashErr(w, h.st.DeleteAPIKey(pathID(r)), "key deleted")
+	flashErr(w, r, h.st.DeleteAPIKey(pathID(r)), "key deleted")
 	http.Redirect(w, r, "/admin/keys", http.StatusFound)
 }
 
@@ -182,15 +184,15 @@ func (h *Handler) queryIDsPage(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) queryIDsRefresh(w http.ResponseWriter, r *http.Request) {
 	if h.refresh == nil {
-		setFlash(w, "err", "query-id refresh is not available")
+		setFlash(w, r, "err", "query-id refresh is not available")
 		http.Redirect(w, r, "/admin/query-ids", http.StatusFound)
 		return
 	}
 	n, err := h.refresh()
 	if err != nil {
-		setFlash(w, "err", err.Error())
+		setFlash(w, r, "err", err.Error())
 	} else {
-		setFlash(w, "ok", "refreshed "+strconv.Itoa(n)+" query IDs from x.com")
+		setFlash(w, r, "ok", "refreshed "+strconv.Itoa(n)+" query IDs from x.com")
 	}
 	http.Redirect(w, r, "/admin/query-ids", http.StatusFound)
 }
@@ -228,7 +230,7 @@ func (h *Handler) settingsSave(w http.ResponseWriter, r *http.Request) {
 	_ = h.st.SetSetting(store.SettingUserAgent, r.FormValue("user_agent"))
 	_ = h.st.SetSetting(store.SettingClientProfile, r.FormValue("client_profile"))
 	_ = h.st.SetSetting(store.SettingTxID, r.FormValue("tx_id"))
-	setFlash(w, "ok", "settings saved (transport changes apply on restart)")
+	setFlash(w, r, "ok", "settings saved (transport changes apply on restart)")
 	http.Redirect(w, r, "/admin/settings", http.StatusFound)
 }
 
@@ -258,10 +260,10 @@ func atoi(s string) int {
 
 func must(v string, _ error) string { return v }
 
-func flashErr(w http.ResponseWriter, err error, okMsg string) {
+func flashErr(w http.ResponseWriter, r *http.Request, err error, okMsg string) {
 	if err != nil {
-		setFlash(w, "err", err.Error())
+		setFlash(w, r, "err", err.Error())
 		return
 	}
-	setFlash(w, "ok", okMsg)
+	setFlash(w, r, "ok", okMsg)
 }

@@ -48,7 +48,7 @@ func (s *Store) ListAccounts() ([]Account, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	return collectAccounts(rows)
 }
 
@@ -61,7 +61,7 @@ func (s *Store) ListAvailableAccounts() ([]Account, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	return collectAccounts(rows)
 }
 
