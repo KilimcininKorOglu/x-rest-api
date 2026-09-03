@@ -319,6 +319,23 @@ type LiveSpace struct {
 	AdminUserIDs       []string `json:"admin_user_ids,omitempty"`
 }
 
+// Article is one long-form Article (X Articles). Text is the plain-text body
+// flattened from the article's content blocks.
+type Article struct {
+	RestID           string `json:"rest_id"`
+	Title            string `json:"title"`
+	PreviewText      string `json:"preview_text,omitempty"`
+	Text             string `json:"text,omitempty"`
+	CoverImageURL    string `json:"cover_image_url,omitempty"`
+	Lifecycle        string `json:"lifecycle,omitempty"` // Published or Draft
+	CreatedAt        int64  `json:"created_at,omitempty"`
+	FirstPublishedAt int64  `json:"first_published_at,omitempty"`
+	ModifiedAt       int64  `json:"modified_at,omitempty"`
+	TweetID          string `json:"tweet_id,omitempty"` // the announcement tweet, if any
+	AuthorID         string `json:"author_id,omitempty"`
+	AuthorScreenName string `json:"author_screen_name,omitempty"`
+}
+
 // Hashflag is one active hashflag (hashmoji): a hashtag mapped to an emoji image
 // for a time window. The field names match x.com's hashflags.json response.
 type Hashflag struct {

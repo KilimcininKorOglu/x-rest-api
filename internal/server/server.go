@@ -184,6 +184,9 @@ func (s *Server) v1Routes() []apiRoute {
 		list("/v1/users/{handle}/highlights", "A user's highlights", s.readTweets("handle", "UserHighlightsTweets", (*xapi.XClient).UserHighlights)),
 		list("/v1/users/{handle}/likes", "A user's liked posts", s.readTweets("handle", "Likes", (*xapi.XClient).Likes)),
 		list("/v1/users/{handle}/mentions", "Tweets mentioning a user", s.userMentions),
+		with(route("GET", "/v1/users/{handle}/articles", "Your own long-form Articles (account-scoped)", []xapi.Article{}, append([]openapi.Param{
+			{Name: "lifecycle", In: "query", Type: "string", Desc: "Published (default) or Draft. Only the authenticated account's own Articles are returned, so pin your own account and pass your own handle."},
+		}, countParams...)), s.userArticles),
 		usersList("/v1/users/{handle}/followers", "A user's followers", s.readUsers("handle", "Followers", (*xapi.XClient).Followers)),
 		usersList("/v1/users/{handle}/following", "Who a user follows", s.readUsers("handle", "Following", (*xapi.XClient).Following)),
 		usersList("/v1/users/{handle}/verified-followers", "A user's verified followers", s.readUsers("handle", "BlueVerifiedFollowers", (*xapi.XClient).VerifiedFollowers)),

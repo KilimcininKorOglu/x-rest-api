@@ -90,6 +90,22 @@ func (s *Server) blockedAccounts(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// userArticles serves GET /v1/users/{handle}/articles: a user's long-form
+// Articles. It is account-scoped for both lifecycles, because x.com's
+// ArticleEntitiesSlice only returns the authenticated account's own Articles; pin
+// your own account and pass your own handle. ?lifecycle=Published (default) or
+// Draft.
+func (s *Server) userArticles(w http.ResponseWriter, r *http.Request) {
+	handle := chi.URLParam(r, "handle")
+	lifecycle := r.URL.Query().Get("lifecycle")
+	if lifecycle == "" {
+		lifecycle = "Published"
+	}
+	s.serveRead(w, r, true, "ArticleEntitiesSlice", func(c *xapi.XClient) (any, string, error) {
+		return asRead(c.UserArticles(handle, lifecycle, countParam(r), cursorParam(r)))
+	})
+}
+
 // hashflags serves GET /v1/hashflags: the active hashflag emojis (hashmojis).
 // It is not account-scoped, because the list is global.
 func (s *Server) hashflags(w http.ResponseWriter, r *http.Request) {
