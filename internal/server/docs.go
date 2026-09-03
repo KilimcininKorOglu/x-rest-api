@@ -7,6 +7,7 @@ package server
 import (
 	"embed"
 	"encoding/json"
+	"fmt"
 	"io/fs"
 	"log"
 	"net/http"
@@ -48,7 +49,7 @@ func (s *Server) buildSpec(routes []apiRoute) {
 	b, err := json.Marshal(doc)
 	if err != nil {
 		log.Printf("openapi: marshal spec: %v", err)
-		b = []byte(`{"openapi":"3.0.3","info":{"title":"x-rest-api","version":"1.0.0"},"paths":{}}`)
+		b = fmt.Appendf(nil, `{"openapi":"3.0.3","info":{"title":"x-rest-api","version":%q},"paths":{}}`, version.Version)
 	}
 	s.spec = b
 }
