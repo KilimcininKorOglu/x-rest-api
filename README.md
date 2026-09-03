@@ -2,8 +2,14 @@
 
 Read/write HTTP REST API over x.com (Twitter)'s private GraphQL surface, in Go,
 with an htmx dark-mode admin panel. Multi-account cookie rotation, API-key
-management, and full request logging. The REST API and the admin panel share one
-port: `/v1` is the API, `/admin` is the panel.
+management, and full request logging. Everything shares one port: `/v1` is the
+native API, `/2` mirrors the official X API v2 request/response shape, and
+`/admin` is the panel.
+
+`/2` renders the official `{data, includes, meta, errors}` envelope with full
+`tweet.fields`/`user.fields`/`expansions` selection, so a client written for
+`api.x.com` reaches this server with only a base-URL change. See
+[X API v2 compatible layer](#x-api-v2-compatible-layer-2).
 
 Only the listen port comes from the environment. Every other setting (accounts,
 API keys, proxy, writes, retention) lives in SQLite and is managed from `/admin`.
@@ -71,9 +77,13 @@ failure is `{"error": {"message": ...}}`. Every `/v1` route needs the Bearer key
 | `/v1/users/{handle}/id`                      | resolve one handle or numeric id to `{id, username}`                              |
 | `/v1/users/{handle}/tweets`                  | a user's posts                                                                    |
 | `/v1/users/{handle}/replies`                 | posts + replies                                                                   |
+| `/v1/users/{handle}/replies-only`            | replies only (no standalone posts)                                                |
+| `/v1/users/{handle}/reposts`                 | a user's reposts                                                                  |
 | `/v1/users/{handle}/media`                   | media posts                                                                       |
 | `/v1/users/{handle}/highlights`              | highlights                                                                        |
 | `/v1/users/{handle}/likes`                   | a user's liked tweets                                                             |
+| `/v1/users/{handle}/mentions`                | tweets mentioning a user                                                          |
+| `/v1/users/{handle}/articles`                | your own long-form Articles; `?lifecycle=Published\|Draft` (account-scoped)       |
 | `/v1/users/{handle}/followers`               | followers                                                                         |
 | `/v1/users/{handle}/following`               | following                                                                         |
 | `/v1/users/{handle}/verified-followers`      | verified (blue) followers                                                         |
@@ -90,6 +100,8 @@ failure is `{"error": {"message": ...}}`. Every `/v1` route needs the Bearer key
 | `/v1/tweets/{id}/history`                    | edit history (raw GQL)                                                            |
 | `/v1/tweets/{id}/retweeters`                 | who reposted                                                                      |
 | `/v1/tweets/{id}/likers`                     | who liked                                                                         |
+| `/v1/tweets/{id}/quotes`                     | tweets quoting a tweet                                                            |
+| `/v1/tweets/{id}/hidden`                     | hidden replies under a tweet                                                      |
 | `/v1/tweets/by?ids=`                         | batch tweet lookup (comma-separated numeric ids, max 100)                         |
 | `/v1/search?q=&product=Latest`               | keyword/filter search (tweets)                                                    |
 | `/v1/search/people?q=`                       | keyword/filter search (users)                                                     |
@@ -99,8 +111,10 @@ failure is `{"error": {"message": ...}}`. Every `/v1` route needs the Bearer key
 | `/v1/lists/{id}/tweets`                      | list timeline                                                                     |
 | `/v1/lists/{id}/rss`                         | list timeline as an RSS 2.0 feed                                                  |
 | `/v1/lists/{id}/members`                     | list members                                                                      |
+| `/v1/spaces/live`                            | live Spaces from your network (account-scoped)                                    |
 | `/v1/spaces/{id}`                            | Space info by id (raw GQL)                                                        |
 | `/v1/spaces/{id}/stream`                     | a Space's live stream status (playback source, share url)                         |
+| `/v1/hashflags`                              | active hashflag emojis (hashmojis)                                                |
 | `/v1/notifications`                          | notifications timeline (raw GQL, account-scoped)                                  |
 | `/v1/bookmarks/folders`                      | bookmark folders (raw GQL, account-scoped)                                        |
 | `/v1/bookmarks/folders/{id}`                 | tweets in a bookmark folder (account-scoped)                                      |
@@ -109,12 +123,17 @@ failure is `{"error": {"message": ...}}`. Every `/v1` route needs the Bearer key
 | `/v1/communities/{id}/members`               | community members                                                                 |
 | `/v1/communities/{id}/moderators`            | community moderators                                                              |
 | `/v1/trends?category=trending`               | trends (raw GQL); `trending\|news\|sport\|entertainment`                          |
+| `/v1/trends/sidebar`                         | personalized "What's happening" trends (ExploreSidebar)                           |
+| `/v1/explore`                                | Explore "For You" trends, incl. AI news stories (ExplorePage)                     |
 | `/v1/bookmarks`                              | bookmarks (account-scoped)                                                        |
 | `/v1/home`                                   | home feed; `?chronological=true` for the Following (latest) feed (account-scoped) |
 | `/v1/users/{handle}/affiliates`              | a user's business-profile affiliates                                              |
 | `/v1/suggestions?creator_only=`              | who-to-follow recommendations (account-scoped)                                    |
+| `/v1/blocks`                                 | blocked accounts (account-scoped)                                                 |
+| `/v1/account/me`                             | your own profile (account-scoped)                                                 |
 | `/v1/lists`                                  | your own lists (account-scoped)                                                   |
 | `/v1/analytics?from_time=&to_time=&metrics=` | account analytics overview (raw, account-scoped)                                  |
+| `/v1/analytics/overview`                     | typed account analytics (followers, engagements, follows; account-scoped)        |
 | `/v1/jobs/search?keyword=&location=`         | search X Jobs                                                                     |
 | `/v1/jobs/{id}`                              | job details                                                                       |
 | `/v1/jobs/locations?query=`                  | job location suggestions                                                          |
@@ -166,10 +185,14 @@ specific account):
 | `DELETE /v1/tweets/{id}/retweet`          | none                                                                             | remove a repost                                                   |
 | `POST /v1/tweets/{id}/bookmark`           | none                                                                             | bookmark a tweet                                                  |
 | `DELETE /v1/tweets/{id}/bookmark`         | none                                                                             | remove a bookmark                                                 |
+| `POST /v1/tweets/{id}/hide`               | none                                                                             | hide a reply (you must be the conversation author)               |
+| `DELETE /v1/tweets/{id}/hide`             | none                                                                             | unhide a reply                                                   |
 | `POST /v1/users/{handle}/follow`          | none                                                                             | follow a user                                                     |
 | `DELETE /v1/users/{handle}/follow`        | none                                                                             | unfollow a user                                                   |
 | `POST /v1/users/{handle}/mute`            | none                                                                             | mute a user (hides their posts)                                   |
 | `DELETE /v1/users/{handle}/mute`          | none                                                                             | unmute a user                                                     |
+| `POST /v1/users/{handle}/block`           | none                                                                             | block a user                                                      |
+| `DELETE /v1/users/{handle}/block`         | none                                                                             | unblock a user                                                    |
 | `GET /v1/scheduled`                       | none                                                                             | your scheduled (unsent) tweets (account-scoped)                   |
 | `POST /v1/scheduled`                      | `{"text": "...", "execute_at": <unix>}`                                          | schedule a tweet for a future time                                |
 | `DELETE /v1/scheduled/{id}`               | none                                                                             | cancel a scheduled tweet                                          |
@@ -199,12 +222,94 @@ curl -H "Authorization: Bearer $KEY" -H "X-Account: main" http://localhost:8430/
 
 `/openapi.json` is generated at startup from the `/v1` route table and the real
 Go response types (via reflection), so it never drifts from the code: add a
-route and it appears in the schema. `/docs` serves Swagger UI (vendored, no CDN)
-against that schema. Both are open (no API key), like `/health`.
+route and it appears in the schema. `/openapi-v2.json` is a separate hand-written
+document for the `/2` surface. `/docs` serves Swagger UI (vendored, no CDN)
+against `/openapi.json`. All three are open (no API key), like `/health`.
 
 ```bash
 curl http://localhost:8430/openapi.json
+curl http://localhost:8430/openapi-v2.json
 open http://localhost:8430/docs
+```
+
+## X API v2 compatible layer (`/2`)
+
+`/2` mirrors the official X API v2 surface: the same paths, the same
+`{data, includes, meta, errors}` envelope, and the same `Authorization: Bearer`
+auth as `/v1`. Point an existing `api.x.com` client at this server, keep its
+Bearer key, and only change the base URL. Custom features stay on `/v1`; they are
+not mirrored to `/2`.
+
+**Field selection** works exactly like X v2: pass `tweet.fields`, `user.fields`,
+`media.fields`, `poll.fields`, `place.fields`, `list.fields`, `space.fields`
+(comma-separated), and `expansions` to pull related objects into `includes`. Each
+`*.fields` set is added to the v2 default set. Fields with no source in the
+upstream payload are omitted (the parameter is still accepted). Timelines use the
+v2 paging params `max_results` and `pagination_token`, and return
+`meta.result_count` / `meta.next_token`.
+
+Reads:
+
+| Endpoint                                              | Description                                  |
+|------------------------------------------------------|----------------------------------------------|
+| `/2/users/by/username/{username}`                    | one user by handle                           |
+| `/2/users/by?usernames=a,b`                          | many users by handle                         |
+| `/2/users/me`                                         | the authenticated user (account-scoped)      |
+| `/2/users/{id}`                                       | one user by numeric id                       |
+| `/2/users?ids=1,2`                                    | many users by numeric id                     |
+| `/2/users/{id}/tweets`                               | a user's posts                               |
+| `/2/users/{id}/mentions`                             | tweets mentioning a user                     |
+| `/2/users/{id}/timelines/reverse_chronological`      | the user's reverse-chronological home        |
+| `/2/users/{id}/liked_tweets`                         | a user's liked tweets                        |
+| `/2/users/{id}/followers`                            | followers                                    |
+| `/2/users/{id}/following`                            | following                                    |
+| `/2/users/{id}/blocking`                             | blocked accounts (account-scoped)            |
+| `/2/users/{id}/bookmarks`                            | bookmarks (account-scoped)                   |
+| `/2/tweets/{id}`                                      | one tweet                                    |
+| `/2/tweets?ids=1,2`                                   | many tweets                                  |
+| `/2/tweets/search/recent?query=`                     | recent tweet search                          |
+| `/2/tweets/{id}/retweeted_by`                        | users who reposted                           |
+| `/2/tweets/{id}/liking_users`                        | users who liked                              |
+| `/2/tweets/{id}/quote_tweets`                        | tweets quoting a tweet                       |
+| `/2/lists/{id}`                                       | list metadata                               |
+| `/2/lists/{id}/tweets`                               | list timeline                                |
+| `/2/lists/{id}/members`                              | list members                                 |
+| `/2/spaces/{id}`                                      | Space by id                                  |
+| `/2/dm_events`                                        | direct message events (account-scoped)       |
+
+Writes (same gate as `/v1`: `enable_writes` on, a write key, and a specific
+account). The v2 write bodies and paths match X v2, and a refusal returns the v2
+problem-details error body:
+
+| Endpoint                                          | Description                        |
+|---------------------------------------------------|------------------------------------|
+| `POST /2/tweets`                                  | post a tweet                       |
+| `DELETE /2/tweets/{id}`                           | delete a tweet                     |
+| `PUT /2/tweets/{id}/hidden`                       | hide/unhide a reply                |
+| `POST /2/users/{id}/likes`                        | like a tweet                       |
+| `DELETE /2/users/{id}/likes/{tweet_id}`           | remove a like                      |
+| `POST /2/users/{id}/retweets`                     | repost a tweet                     |
+| `DELETE /2/users/{id}/retweets/{source_tweet_id}` | remove a repost                    |
+| `POST /2/users/{id}/following`                    | follow a user                      |
+| `DELETE /2/users/{id}/following/{target_id}`      | unfollow a user                    |
+| `POST /2/users/{id}/muting`                       | mute a user                        |
+| `DELETE /2/users/{id}/muting/{target_id}`         | unmute a user                      |
+| `POST /2/users/{id}/blocking`                     | block a user                       |
+| `DELETE /2/users/{id}/blocking/{target_id}`       | unblock a user                     |
+| `POST /2/users/{id}/bookmarks`                    | bookmark a tweet                   |
+| `DELETE /2/users/{id}/bookmarks/{tweet_id}`       | remove a bookmark                  |
+| `POST /2/lists`                                   | create a list                      |
+| `PUT /2/lists/{id}`                               | update a list                      |
+| `DELETE /2/lists/{id}`                            | delete a list                      |
+| `POST /2/lists/{id}/members`                      | add a list member                  |
+| `DELETE /2/lists/{id}/members/{user_id}`          | remove a list member               |
+| `POST /2/dm_conversations/{id}/messages`          | send a direct message             |
+
+```bash
+curl -H "Authorization: Bearer $KEY" \
+  "http://localhost:8430/2/users/by/username/jack?user.fields=created_at,public_metrics,verified"
+curl -H "Authorization: Bearer $KEY" \
+  "http://localhost:8430/2/tweets/20?tweet.fields=created_at,public_metrics&expansions=author_id&user.fields=username"
 ```
 
 ## Admin panel
@@ -276,11 +381,13 @@ internal/store           SQLite: settings, admins, sessions, accounts, keys,
 internal/xapi            shared transport (Session) + per-account client, parsers,
                          ops.json, x-client-transaction-id generator
 internal/openapi         OpenAPI 3 generator (reflection-based schema + spec)
-internal/server          /v1 router, API-key + logging middleware, rotation pool,
-                         OpenAPI /openapi.json + vendored Swagger UI /docs
+internal/apiv2           X API v2 envelope + field-selection/expansion engine
+internal/server          /v1 and /2 routers, API-key + logging middleware,
+                         rotation pool, /openapi.json + /openapi-v2.json,
+                         vendored Swagger UI /docs
 internal/server/admin    htmx dark-mode panel (templates + static, go:embed)
 ```
 
 ## License
 
-MIT.
+MIT. See [LICENSE](LICENSE).
