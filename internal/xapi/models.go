@@ -303,6 +303,32 @@ type Space struct {
 	AdminScreenNames []string `json:"admin_screen_names,omitempty"`
 }
 
+// LiveSpace is a currently-live audio Space surfaced in the account's network
+// (fleetline). It is a lighter shape than Space, taken from the live-content feed.
+type LiveSpace struct {
+	ID                 string   `json:"id"`
+	BroadcastID        string   `json:"broadcast_id,omitempty"`
+	Title              string   `json:"title,omitempty"`
+	State              string   `json:"state"`
+	MediaKey           string   `json:"media_key,omitempty"`
+	CreatorUserID      string   `json:"creator_user_id,omitempty"` // numeric twitter user id
+	Language           string   `json:"language,omitempty"`
+	TotalLiveListeners int      `json:"total_live_listeners,omitempty"`
+	TotalParticipating int      `json:"total_participating,omitempty"`
+	StartedAt          string   `json:"started_at,omitempty"` // ISO 8601 (upstream "start")
+	AdminUserIDs       []string `json:"admin_user_ids,omitempty"`
+}
+
+// Hashflag is one active hashflag (hashmoji): a hashtag mapped to an emoji image
+// for a time window. The field names match x.com's hashflags.json response.
+type Hashflag struct {
+	Hashtag             string `json:"hashtag"`
+	StartingTimestampMs int64  `json:"starting_timestamp_ms"`
+	EndingTimestampMs   int64  `json:"ending_timestamp_ms"`
+	AssetURL            string `json:"asset_url"`
+	IsHashfettiEnabled  bool   `json:"is_hashfetti_enabled"`
+}
+
 // LiveStreamSource is the playback source of a Space's live audio/video stream.
 type LiveStreamSource struct {
 	Location              string `json:"location,omitempty"`

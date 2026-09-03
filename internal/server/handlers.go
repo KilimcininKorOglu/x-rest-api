@@ -90,6 +90,24 @@ func (s *Server) blockedAccounts(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// hashflags serves GET /v1/hashflags: the active hashflag emojis (hashmojis).
+// It is not account-scoped, because the list is global.
+func (s *Server) hashflags(w http.ResponseWriter, r *http.Request) {
+	s.serveRead(w, r, false, "Hashflags", func(c *xapi.XClient) (any, string, error) {
+		hf, err := c.Hashflags()
+		return asRead(hf, "", err)
+	})
+}
+
+// liveSpaces serves GET /v1/spaces/live: currently-live Spaces from the account's
+// network (account-scoped, Fleetline).
+func (s *Server) liveSpaces(w http.ResponseWriter, r *http.Request) {
+	s.serveRead(w, r, true, "Fleetline", func(c *xapi.XClient) (any, string, error) {
+		sp, err := c.LiveSpaces()
+		return asRead(sp, "", err)
+	})
+}
+
 // hiddenReplies serves GET /v1/tweets/{id}/hidden: the hidden replies under the
 // account's tweet (account-scoped, ModeratedTimeline).
 func (s *Server) hiddenReplies(w http.ResponseWriter, r *http.Request) {

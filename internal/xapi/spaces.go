@@ -34,6 +34,56 @@ func (c *XClient) SpaceStreamStatus(spaceID string) (*LiveStreamStatus, error) {
 	return parseLiveStreamStatus(resp, mediaKey), nil
 }
 
+// fleetlineURL is the REST endpoint listing the live content (Spaces) surfaced
+// from the account's network.
+const fleetlineURL = "https://x.com/i/api/fleets/v1/fleetline"
+
+// LiveSpaces returns the currently-live audio Spaces from the account's network.
+// It is account-scoped, because the result depends on who the account follows.
+func (c *XClient) LiveSpaces() ([]LiveSpace, error) {
+	params := url.Values{"only_spaces": {"true"}}
+	resp, err := c.callFormGet("Fleetline", fleetlineURL, params)
+	if err != nil {
+		return nil, err
+	}
+	return parseLiveSpaces(resp), nil
+}
+
+// parseLiveSpaces maps the fleetline threads to LiveSpace records, reading each
+// thread's live_content.audiospace node.
+func parseLiveSpaces(m map[string]any) []LiveSpace {
+	var out []LiveSpace
+	for _, t := range asSlice(m["threads"]) {
+		a := asMap(dig(asMap(t), "live_content", "audiospace"))
+		if a == nil {
+			continue
+		}
+		id := asString(a["id"])
+		if id == "" {
+			continue
+		}
+		sp := LiveSpace{
+			ID:                 id,
+			BroadcastID:        asString(a["broadcast_id"]),
+			Title:              asString(a["title"]),
+			State:              asString(a["state"]),
+			MediaKey:           asString(a["media_key"]),
+			CreatorUserID:      asString(a["creator_twitter_user_id"]),
+			Language:           asString(a["language"]),
+			TotalLiveListeners: asInt(a["total_live_listeners"]),
+			TotalParticipating: asInt(a["total_participating"]),
+			StartedAt:          asString(a["start"]),
+		}
+		for _, adm := range asSlice(a["admin_twitter_user_ids"]) {
+			if s := asString(adm); s != "" {
+				sp.AdminUserIDs = append(sp.AdminUserIDs, s)
+			}
+		}
+		out = append(out, sp)
+	}
+	return out
+}
+
 // SpaceInfo returns an Audio Space's metadata (AudioSpaceById). It works for
 // ended Spaces too, because x.com still returns the metadata.
 func (c *XClient) SpaceInfo(id string) (*Space, error) {
