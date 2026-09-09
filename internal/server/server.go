@@ -239,6 +239,8 @@ func (s *Server) v1Routes() []apiRoute {
 		writeRoute(route("POST", "/v1/lists/{id}/mute", "Mute a list", writeOK, nil), nil, 200, s.muteList),
 		writeRoute(route("DELETE", "/v1/lists/{id}/mute", "Unmute a list", writeOK, nil), nil, 200, s.unmuteList),
 		list("/v1/communities/{id}/tweets", "Community timeline", s.communityTweets),
+		list("/v1/communities/{id}/media", "Community media-only timeline", s.communityMedia),
+		list("/v1/communities/{id}/hashtag/{tag}", "Community timeline filtered to one hashtag", s.communityHashtag),
 		usersList("/v1/communities/{id}/members", "Community members", s.readUsersID("id", "membersSliceTimeline_Query", "communityId", (*xapi.XClient).CommunityMembers)),
 		usersList("/v1/communities/{id}/moderators", "Community moderators", s.readUsersID("id", "moderatorsSliceTimeline_Query", "communityId", (*xapi.XClient).CommunityModerators)),
 		with(route("GET", "/v1/communities/{id}", "Community info (raw)", map[string]any{}, rawOnlyParams), s.communityInfo),
@@ -257,6 +259,8 @@ func (s *Server) v1Routes() []apiRoute {
 		with(route("GET", "/v1/spaces/live", "Live Spaces from your network (account-scoped)", []xapi.LiveSpace{}, nil), s.liveSpaces),
 		with(route("GET", "/v1/spaces/{id}", "Space info by id", xapi.Space{}, rawOnlyParams), s.spaceInfo),
 		with(route("GET", "/v1/spaces/{id}/stream", "A Space's live stream status", xapi.LiveStreamStatus{}, nil), s.spaceStream),
+		with(route("GET", "/v1/broadcasts/{id}", "Live video Broadcast by id", xapi.Broadcast{}, rawOnlyParams), s.broadcastInfo),
+		with(route("GET", "/v1/broadcasts/{id}/stream", "A Broadcast's live stream status", xapi.LiveStreamStatus{}, nil), s.broadcastStream),
 		with(route("GET", "/v1/hashflags", "Active hashflag emojis (hashmojis)", []xapi.Hashflag{}, nil), s.hashflags),
 		with(route("GET", "/v1/jobs/search", "Search X Jobs", []xapi.Job{}, []openapi.Param{
 			{Name: "keyword", In: "query", Type: "string", Desc: "Search keyword."},

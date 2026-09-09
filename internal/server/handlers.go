@@ -1039,6 +1039,54 @@ func (s *Server) spaceStream(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// broadcastInfo returns a live video Broadcast's metadata. Broadcasts are a
+// separate surface from audio Spaces, so the {id} is a Broadcast id.
+func (s *Server) broadcastInfo(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	s.serveRead(w, r, false, "BroadcastQuery", func(c *xapi.XClient) (any, string, error) {
+		if rawParam(r) {
+			return rawByVars(c, "BroadcastQuery", map[string]any{"id": id}, "", 0)
+		}
+		b, err := c.GetBroadcast(id)
+		return b, "", err
+	})
+}
+
+// broadcastStream returns a Broadcast's live stream status (playback source,
+// share url), resolved from the Broadcast's media key.
+func (s *Server) broadcastStream(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	s.serveRead(w, r, false, "LiveVideoStreamStatus", func(c *xapi.XClient) (any, string, error) {
+		st, err := c.BroadcastStreamStatus(id)
+		return st, "", err
+	})
+}
+
+// communityMedia returns a community's media-only timeline.
+func (s *Server) communityMedia(w http.ResponseWriter, r *http.Request) {
+	id, count, cursor := chi.URLParam(r, "id"), countParam(r), cursorParam(r)
+	s.serveRead(w, r, false, "CommunityMediaTimeline", func(c *xapi.XClient) (any, string, error) {
+		if rawParam(r) {
+			return rawByVars(c, "CommunityMediaTimeline", map[string]any{"communityId": id}, cursor, count)
+		}
+		return asRead(c.CommunityMedia(id, count, cursor))
+	})
+}
+
+// communityHashtag returns a community's timeline filtered to one hashtag. The
+// {tag} is sent without a leading '#'.
+func (s *Server) communityHashtag(w http.ResponseWriter, r *http.Request) {
+	id, tag := chi.URLParam(r, "id"), strings.TrimPrefix(chi.URLParam(r, "tag"), "#")
+	count, cursor := countParam(r), cursorParam(r)
+	s.serveRead(w, r, false, "CommunityHashtagsTimeline", func(c *xapi.XClient) (any, string, error) {
+		if rawParam(r) {
+			vars := map[string]any{"communityId": id, "hashtags": []string{tag}}
+			return rawByVars(c, "CommunityHashtagsTimeline", vars, cursor, count)
+		}
+		return asRead(c.CommunityHashtags(id, tag, count, cursor))
+	})
+}
+
 // bookmarkFolders returns the raw BookmarkFoldersSlice result (the account's
 // bookmark folders). Account-scoped, so it needs a specific account.
 func (s *Server) bookmarkFolders(w http.ResponseWriter, r *http.Request) {

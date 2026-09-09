@@ -320,6 +320,23 @@ type LiveSpace struct {
 	AdminUserIDs       []string `json:"admin_user_ids,omitempty"`
 }
 
+// Broadcast is a live video Broadcast (BroadcastQuery), a separate surface from
+// an audio Space. Timestamps are ms epoch as x.com returns them; the title comes
+// from the upstream "status" field.
+type Broadcast struct {
+	ID                 string `json:"id"`
+	Title              string `json:"title,omitempty"`
+	State              string `json:"state,omitempty"`
+	ThumbnailURL       string `json:"thumbnail_url,omitempty"`
+	MediaKey           string `json:"media_key,omitempty"`
+	TotalWatched       int    `json:"total_watched,omitempty"`
+	StartTime          int64  `json:"start_time,omitempty"`
+	EndTime            int64  `json:"end_time,omitempty"`
+	ReplayStart        int64  `json:"replay_start,omitempty"`
+	AvailableForReplay bool   `json:"available_for_replay,omitempty"`
+	Broadcaster        *XUser `json:"broadcaster,omitempty"`
+}
+
 // Article is one long-form Article (X Articles). Text is the plain-text body
 // flattened from the article's content blocks.
 type Article struct {

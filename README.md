@@ -114,12 +114,16 @@ failure is `{"error": {"message": ...}}`. Every `/v1` route needs the Bearer key
 | `/v1/spaces/live`                            | live Spaces from your network (account-scoped)                                    |
 | `/v1/spaces/{id}`                            | Space info by id (raw GQL)                                                        |
 | `/v1/spaces/{id}/stream`                     | a Space's live stream status (playback source, share url)                         |
+| `/v1/broadcasts/{id}`                        | live video Broadcast metadata (separate surface from a Space)                      |
+| `/v1/broadcasts/{id}/stream`                 | a Broadcast's live stream status (playback source, share url)                      |
 | `/v1/hashflags`                              | active hashflag emojis (hashmojis)                                                |
 | `/v1/notifications`                          | notifications timeline (raw GQL, account-scoped)                                  |
 | `/v1/bookmarks/folders`                      | bookmark folders (raw GQL, account-scoped)                                        |
 | `/v1/bookmarks/folders/{id}`                 | tweets in a bookmark folder (account-scoped)                                      |
 | `/v1/communities/{id}`                       | community info (raw GQL)                                                          |
 | `/v1/communities/{id}/tweets`                | community timeline                                                                |
+| `/v1/communities/{id}/media`                 | community media-only timeline                                                     |
+| `/v1/communities/{id}/hashtag/{tag}`         | community timeline filtered to one hashtag (send the tag without `#`)             |
 | `/v1/communities/{id}/members`               | community members                                                                 |
 | `/v1/communities/{id}/moderators`            | community moderators                                                              |
 | `/v1/trends?category=trending`               | trends (raw GQL); `trending\|news\|sport\|entertainment`                          |
@@ -346,17 +350,34 @@ Trade-off: this leaks the queried id/handle to a third party, so it is opt-in.
 ## Docker
 
 ```bash
-docker build -t x-rest-api .
-docker run -p 8430:8430 -v x-rest-api-data:/app/data x-rest-api
+docker compose up -d --build api      # http://127.0.0.1:8430/admin
+docker compose logs -f api
+docker compose down
 ```
 
-The SQLite database lives in the `/app/data` volume.
+The SQLite database is bind-mounted from the repo's `./data`, so it survives
+`docker compose down` and is readable from the host. The port is published on
+`127.0.0.1` because the service terminates no TLS and the database holds
+plaintext cookies and API keys; put a TLS proxy in front to expose it.
+
+Without compose:
+
+```bash
+docker build -t x-rest-api .
+docker run -p 127.0.0.1:8430:8430 -v "$PWD/data:/app/data" x-rest-api
+```
 
 ## Testing
 
 ```bash
-make test   # offline parser + tx golden + store tests, no network
+make test                          # offline parser + tx golden + store tests, no network
+docker compose run --rm test       # the same suite in the container
 ```
+
+The compose `test` service builds the Dockerfile's `test` stage and runs
+`make test` (`go test -count=1`, cache disabled). It publishes no port and needs
+no cookies. `helper-projects/` is excluded by `.dockerignore`, so it never enters
+the image.
 
 ## Security notes
 

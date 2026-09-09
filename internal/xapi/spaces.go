@@ -22,6 +22,13 @@ func (c *XClient) SpaceStreamStatus(spaceID string) (*LiveStreamStatus, error) {
 	if mediaKey == "" {
 		return nil, fmt.Errorf("space %q has no media key (not live?)", spaceID)
 	}
+	return c.streamStatusByMediaKey(mediaKey)
+}
+
+// streamStatusByMediaKey reads the live stream status for a media key. Spaces and
+// Broadcasts share this REST 1.1 endpoint, so both resolve their media key first
+// and then call here.
+func (c *XClient) streamStatusByMediaKey(mediaKey string) (*LiveStreamStatus, error) {
 	params := url.Values{
 		"client":                   {"web"},
 		"use_syndication_guest_id": {"false"},
