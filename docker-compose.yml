@@ -1,0 +1,35 @@
+services:
+  # The API (/v1, /2) and the admin panel (/admin) share this one port.
+  # Published on loopback: the service terminates no TLS and its SQLite holds
+  # plaintext cookies and API keys. Put a TLS proxy in front to expose it.
+  api:
+    build:
+      context: .
+      target: runtime
+    image: x-rest-api:local
+    container_name: x-rest-api
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8430:8430"
+    environment:
+      PORT: "8430"
+      DB_PATH: /app/data/x-rest-api.db
+    volumes:
+      - ./data:/app/data
+
+  # Offline test suite: `docker compose run --rm test`.
+  # Runs `make test` (go test -count=1, cache disabled) over the Makefile's
+  # package list. No host port, no network service, no cookies needed.
+  test:
+    build:
+      context: .
+      target: test
+    image: x-rest-api-test:local
+    profiles: ["test"]
+    volumes:
+      - go-mod-cache:/go/pkg/mod
+      - go-build-cache:/root/.cache/go-build
+
+volumes:
+  go-mod-cache:
+  go-build-cache:

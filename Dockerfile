@@ -14,8 +14,16 @@ COPY . .
 RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/x-rest-api ./cmd/x-rest-api \
     && mkdir -p /out/data
 
+# ---- test stage ----
+# Reuses the build stage's source and module cache and only adds make, so
+# `make test` runs the exact package list the Makefile computes. helper-projects/
+# is excluded by .dockerignore, so it never enters this image.
+FROM build AS test
+RUN apk add --no-cache make
+CMD ["make", "test"]
+
 # ---- runtime stage ----
-FROM gcr.io/distroless/static-debian12:nonroot
+FROM gcr.io/distroless/static-debian12:nonroot AS runtime
 WORKDIR /app
 COPY --from=build /out/x-rest-api /app/x-rest-api
 COPY --from=build --chown=nonroot:nonroot /out/data /app/data
