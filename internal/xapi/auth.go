@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"maps"
 	"sync"
+	"time"
 
 	http "github.com/bogdanfinn/fhttp"
 	tls_client "github.com/bogdanfinn/tls-client"
@@ -50,6 +51,9 @@ type Session struct {
 	mu         sync.RWMutex
 	queryIDs   map[string]string   // op -> queryId overrides (auto-refreshed from the bundle)
 	featSwitch map[string][]string // op -> feature-flag names the live bundle lists for it
+
+	guestTok string    // cached guest token for the credential-free read tier
+	guestExp time.Time // when the cached guest token is re-minted
 }
 
 // SetQueryIDs replaces the queryId override map (from the DB or a bundle refresh).

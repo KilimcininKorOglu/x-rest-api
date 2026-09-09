@@ -458,11 +458,11 @@ func recordErr(r *http.Request, err error) {
 
 func (s *Server) getUser(w http.ResponseWriter, r *http.Request) {
 	handle := chi.URLParam(r, "handle")
-	// FxTwitter's user endpoint needs a screen_name, so skip the fallback for
-	// numeric ids.
+	// The credential-free tiers resolve a profile by screen_name, so skip the
+	// fallback for numeric ids.
 	var pub func() (any, error)
 	if !allDigits(handle) {
-		pub = func() (any, error) { return s.sess.FetchUserPublic(handle) }
+		pub = func() (any, error) { return s.sess.PublicUser(handle) }
 	}
 	s.serveReadPub(w, r, false, "UserByScreenName", func(c *xapi.XClient) (any, string, error) {
 		if rawParam(r) {
@@ -677,10 +677,10 @@ func (s *Server) trends(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) getTweet(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-	// FxTwitter returns a single tweet, not a reply thread, so the fallback
-	// yields {tweet, replies: []}.
+	// No credential-free tier serves a reply thread, so the fallback yields
+	// {tweet, replies: []}.
 	pub := func() (any, error) {
-		tw, err := s.sess.FetchTweetPublic(id)
+		tw, err := s.sess.PublicTweet(id)
 		if err != nil {
 			return nil, err
 		}
@@ -697,7 +697,7 @@ func (s *Server) getTweet(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) getTweetResult(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-	pub := func() (any, error) { return s.sess.FetchTweetPublic(id) }
+	pub := func() (any, error) { return s.sess.PublicTweet(id) }
 	s.serveReadPub(w, r, false, "TweetResultByRestId", func(c *xapi.XClient) (any, string, error) {
 		if rawParam(r) {
 			return rawByVars(c, "TweetResultByRestId", map[string]any{"tweetId": id}, "", 0)

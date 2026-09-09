@@ -81,7 +81,7 @@ func (c *XClient) call(op string, variables map[string]any) (map[string]any, err
 	maps.Copy(v, s.Variables)
 	maps.Copy(v, variables)
 
-	req, err := c.buildRequest(s, op, v)
+	req, err := buildGraphQLRequest(s, op, v)
 	if err != nil {
 		return nil, err
 	}
@@ -238,7 +238,9 @@ func (c *XClient) callJSON(op, apiURL string, payload any) (map[string]any, erro
 
 // buildRequest constructs the GET (query string) or POST (json body) request for
 // an op, encoding variables and features as compact JSON.
-func (c *XClient) buildRequest(s OpSpec, op string, v map[string]any) (*http.Request, error) {
+// buildGraphQLRequest builds the GraphQL request for an op spec. It needs no
+// account, so both the session-backed path and the guest path share it.
+func buildGraphQLRequest(s OpSpec, op string, v map[string]any) (*http.Request, error) {
 	varsJSON, err := json.Marshal(v)
 	if err != nil {
 		return nil, fmt.Errorf("%s: marshal variables: %w", op, err)

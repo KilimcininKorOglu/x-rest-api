@@ -108,8 +108,16 @@ func fxTweetToModel(t *fxTweet) *Tweet {
 	}
 }
 
-// getFxJSON performs a browser-like GET (no cookie) and decodes JSON.
+// getFxJSON performs a browser-like GET (no cookie) against FxTwitter.
 func (s *Session) getFxJSON(url string, out any) error {
+	return s.getPublicJSON("fxtwitter", url, out)
+}
+
+// getPublicJSON performs a browser-like GET with no cookie and decodes JSON.
+// Every credential-free reader (syndication, FxTwitter) shares it, so the
+// header order and the error shape stay identical across tiers. label prefixes
+// the error so the caller can tell which tier failed.
+func (s *Session) getPublicJSON(label, url string, out any) error {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return err
@@ -121,7 +129,7 @@ func (s *Session) getFxJSON(url string, out any) error {
 	}
 	resp, err := s.client.Do(req)
 	if err != nil {
-		return fmt.Errorf("fxtwitter: %w", err)
+		return fmt.Errorf("%s: %w", label, err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 	body, err := io.ReadAll(resp.Body)
@@ -129,7 +137,7 @@ func (s *Session) getFxJSON(url string, out any) error {
 		return err
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("fxtwitter: http %d", resp.StatusCode)
+		return fmt.Errorf("%s: http %d", label, resp.StatusCode)
 	}
 	return json.Unmarshal(body, out)
 }

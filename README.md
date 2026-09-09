@@ -343,9 +343,23 @@ curl -H "Authorization: Bearer $KEY" \
 Off by default. Enable it in Settings (`enable_public_fallback`). When every
 account is exhausted/cooling down, or an authed read is rejected (401/403),
 `GET /v1/users/{handle}` (non-numeric) and `GET /v1/tweets/{id}` /
-`/v1/tweets/{id}/result` fall back to `api.fxtwitter.com` (no cookie). The thread
-form returns `{tweet, replies: []}` because FxTwitter serves a single tweet.
-Trade-off: this leaks the queried id/handle to a third party, so it is opt-in.
+`/v1/tweets/{id}/result` fall back to a chain of credential-free tiers, tried
+cheapest first:
+
+| Tier | Surface | Needs | Serves |
+|------|---------|-------|--------|
+| 0 | `cdn.syndication.twimg.com` (x.com's own embed endpoint) | nothing | a single tweet |
+| 1 | guest GraphQL, token minted from `1.1/guest/activate.json` | nothing | a single tweet, a profile |
+| 2 | `api.fxtwitter.com` | nothing | a single tweet, a profile |
+
+Tiers 0 and 1 stay on x.com's own hosts, so the queried id or handle never
+leaves them. The FxTwitter step is last precisely because it is the only one that
+discloses the query to a third party. The guest token is cached and re-minted on
+rejection.
+
+The thread form returns `{tweet, replies: []}`, because no credential-free tier
+serves a reply thread. Timelines and search have no fallback at all: x.com serves
+neither to a logged-out client.
 
 ## Docker
 
@@ -400,7 +414,8 @@ internal/config          PORT / DB_PATH only
 internal/store           SQLite: settings, admins, sessions, accounts, keys,
                          logs, query_ids, account_locks (per-op rotation locks)
 internal/xapi            shared transport (Session) + per-account client, parsers,
-                         ops.json, x-client-transaction-id generator
+                         ops.json, x-client-transaction-id generator,
+                         credential-free read tiers (syndication, guest, FxTwitter)
 internal/openapi         OpenAPI 3 generator (reflection-based schema + spec)
 internal/apiv2           X API v2 envelope + field-selection/expansion engine
 internal/server          /v1 and /2 routers, API-key + logging middleware,
