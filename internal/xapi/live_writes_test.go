@@ -8,74 +8,91 @@ import (
 	"time"
 )
 
-// TestLiveWrites smoke-tests each write surface and immediately reverses it, so
+// The write smokes exercise each write surface and immediately reverse it, so
 // the account is left unchanged. Note tweets need X Premium and are expected to
-// fail. Run with:
+// fail. Run them with:
 //
-//	go test -tags live -run TestLiveWrites -count=1 -v ./internal/xapi/
-func TestLiveWrites(t *testing.T) {
+//	go test -tags live -run TestLiveWrite -count=1 -v ./internal/xapi/
+
+// liveWriteClient builds a client for the write smokes and a stamp that keeps
+// each run's text unique.
+func liveWriteClient(t *testing.T) (*XClient, int64) {
+	t.Helper()
 	acct := loadLiveAccount(t)
 	sess, err := NewSession("", "", "", "")
 	if err != nil {
 		t.Fatalf("NewSession: %v", err)
 	}
-	c := NewClientFor(sess, acct)
-	stamp := time.Now().UnixNano()
+	return NewClientFor(sess, acct), time.Now().UnixNano()
+}
 
-	// plain tweet -> delete
-	if tw, e := c.CreateTweet(fmt.Sprintf("hello %d", stamp), "", nil, ""); e == nil {
-		t.Logf("  ok   CreateTweet             rest_id=%s", tw.RestID)
-		if e := c.DeleteTweet(tw.RestID); e != nil {
-			t.Errorf("  cleanup DeleteTweet: %v", e)
-		}
-	} else {
-		t.Logf("  FAIL CreateTweet             %v", e)
+// createAndDelete posts a tweet and deletes it again, so the account is left
+// unchanged whatever the outcome.
+func createAndDelete(t *testing.T, c *XClient, label, text, replyTo, quoteOf string) {
+	t.Helper()
+	tw, err := c.CreateTweet(text, replyTo, nil, quoteOf)
+	if err != nil {
+		t.Logf("  FAIL %-24s %v", label, err)
+		return
 	}
-
-	// reply -> delete
-	if tw, e := c.CreateTweet(fmt.Sprintf("reply %d", stamp), "20", nil, ""); e == nil {
-		t.Logf("  ok   CreateTweet(reply)      rest_id=%s", tw.RestID)
-		_ = c.DeleteTweet(tw.RestID)
-	} else {
-		t.Logf("  FAIL CreateTweet(reply)      %v", e)
+	t.Logf("  ok   %-24s rest_id=%s", label, tw.RestID)
+	if err := c.DeleteTweet(tw.RestID); err != nil {
+		t.Errorf("  cleanup DeleteTweet(%s): %v", tw.RestID, err)
 	}
+}
 
-	// quote -> delete
-	if tw, e := c.CreateTweet(fmt.Sprintf("quote %d", stamp), "", nil, "20"); e == nil {
-		t.Logf("  ok   CreateTweet(quote)      rest_id=%s", tw.RestID)
-		_ = c.DeleteTweet(tw.RestID)
-	} else {
-		t.Logf("  FAIL CreateTweet(quote)      %v", e)
+// TestLiveWriteTweets covers the plain, reply and quote forms of CreateTweet.
+func TestLiveWriteTweets(t *testing.T) {
+	c, stamp := liveWriteClient(t)
+	createAndDelete(t, c, "CreateTweet", fmt.Sprintf("hello %d", stamp), "", "")
+	createAndDelete(t, c, "CreateTweet(reply)", fmt.Sprintf("reply %d", stamp), "20", "")
+	createAndDelete(t, c, "CreateTweet(quote)", fmt.Sprintf("quote %d", stamp), "", "20")
+}
+
+// TestLiveWriteFavorite likes a tweet and unlikes it again.
+func TestLiveWriteFavorite(t *testing.T) {
+	c, _ := liveWriteClient(t)
+	if err := c.FavoriteTweet("20"); err != nil {
+		t.Logf("  FAIL FavoriteTweet           %v", err)
+		return
 	}
-
-	// like -> unlike
-	if e := c.FavoriteTweet("20"); e == nil {
-		t.Log("  ok   FavoriteTweet")
-		if e := c.UnfavoriteTweet("20"); e != nil {
-			t.Errorf("  cleanup UnfavoriteTweet: %v", e)
-		}
-	} else {
-		t.Logf("  FAIL FavoriteTweet           %v", e)
+	t.Log("  ok   FavoriteTweet")
+	if err := c.UnfavoriteTweet("20"); err != nil {
+		t.Errorf("  cleanup UnfavoriteTweet: %v", err)
 	}
+}
 
-	// schedule -> delete
-	if m, e := c.ScheduleTweet(fmt.Sprintf("later %d", stamp), time.Now().Add(48*time.Hour).Unix()); e == nil {
-		id := digScheduledID(m)
-		t.Logf("  ok   ScheduleTweet           id=%s", id)
-		if id != "" {
-			if e := c.DeleteScheduledTweet(id); e != nil {
-				t.Errorf("  cleanup DeleteScheduledTweet: %v", e)
-			}
-		}
-	} else {
-		t.Logf("  FAIL ScheduleTweet           %v", e)
+// TestLiveWriteScheduled schedules a tweet far enough ahead to cancel it again.
+func TestLiveWriteScheduled(t *testing.T) {
+	c, stamp := liveWriteClient(t)
+	m, err := c.ScheduleTweet(fmt.Sprintf("later %d", stamp), time.Now().Add(48*time.Hour).Unix())
+	if err != nil {
+		t.Logf("  FAIL ScheduleTweet           %v", err)
+		return
 	}
+	id := digScheduledID(m)
+	t.Logf("  ok   ScheduleTweet           id=%s", id)
+	if id == "" {
+		t.Error("ScheduleTweet returned no id, so the scheduled tweet cannot be cancelled")
+		return
+	}
+	if err := c.DeleteScheduledTweet(id); err != nil {
+		t.Errorf("  cleanup DeleteScheduledTweet: %v", err)
+	}
+}
 
-	// note tweet: expected to fail without X Premium
-	if _, e := c.CreateNoteTweet(fmt.Sprintf("note %d", stamp), ""); e == nil {
-		t.Log("  ok   CreateNoteTweet (account has Premium)")
-	} else {
-		t.Logf("  note CreateNoteTweet needs Premium: %v", e)
+// TestLiveWriteNoteTweet is expected to fail without X Premium. It deletes the
+// note when the account can post one, so the write is still reversed.
+func TestLiveWriteNoteTweet(t *testing.T) {
+	c, stamp := liveWriteClient(t)
+	tw, err := c.CreateNoteTweet(fmt.Sprintf("note %d", stamp), "")
+	if err != nil {
+		t.Logf("  note CreateNoteTweet needs Premium: %v", err)
+		return
+	}
+	t.Logf("  ok   CreateNoteTweet (account has Premium) rest_id=%s", tw.RestID)
+	if err := c.DeleteTweet(tw.RestID); err != nil {
+		t.Errorf("  cleanup DeleteTweet(%s): %v", tw.RestID, err)
 	}
 }
 

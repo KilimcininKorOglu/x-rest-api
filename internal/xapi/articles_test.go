@@ -20,32 +20,21 @@ func TestParseArticles(t *testing.T) {
 		t.Fatalf("parseArticles returned %d articles, want 1", len(arts))
 	}
 	a := arts[0]
-	if a.RestID != "1001" {
-		t.Errorf("RestID = %q", a.RestID)
-	}
-	if a.Title != "Example Article Title" {
-		t.Errorf("Title = %q", a.Title)
-	}
-	if a.Lifecycle != "Published" {
-		t.Errorf("Lifecycle = %q, want Published", a.Lifecycle)
-	}
-	if a.AuthorID != "111" || a.AuthorScreenName != "alice" {
-		t.Errorf("author = %q/%q", a.AuthorID, a.AuthorScreenName)
-	}
-	if a.TweetID != "2001" {
-		t.Errorf("TweetID = %q", a.TweetID)
-	}
-	if a.CoverImageURL != "https://pbs.twimg.com/media/EXAMPLE001.jpg" {
-		t.Errorf("CoverImageURL = %q", a.CoverImageURL)
-	}
-	if a.FirstPublishedAt != 1770281982 {
-		t.Errorf("FirstPublishedAt = %d", a.FirstPublishedAt)
-	}
+	checkFields(t, []fieldCheck{
+		{"RestID", a.RestID, "1001"},
+		{"Title", a.Title, "Example Article Title"},
+		{"Lifecycle", a.Lifecycle, "Published"},
+		{"AuthorID", a.AuthorID, "111"},
+		{"AuthorScreenName", a.AuthorScreenName, "alice"},
+		{"TweetID", a.TweetID, "2001"},
+		{"CoverImageURL", a.CoverImageURL, "https://pbs.twimg.com/media/EXAMPLE001.jpg"},
+		{"FirstPublishedAt", a.FirstPublishedAt, int64(1770281982)},
+		{"cursor", cursor, "DAACCgABAAAAAAAAAAAIAAIAAAABAAA"},
+	})
+	// Text is checked separately: it is flattened from the content blocks, so the
+	// assertion is on its shape rather than on one exact value.
 	if !strings.HasPrefix(a.Text, "First paragraph") || !strings.Contains(a.Text, "\nSecond paragraph") {
 		t.Errorf("Text not flattened correctly: %q", a.Text)
-	}
-	if cursor != "DAACCgABAAAAAAAAAAAIAAIAAAABAAA" {
-		t.Errorf("cursor = %q", cursor)
 	}
 }
 

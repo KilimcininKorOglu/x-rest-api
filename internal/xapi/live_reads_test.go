@@ -21,193 +21,240 @@ func findFolderID(raw map[string]any) string {
 	return ""
 }
 
-// TestLiveReads smoke-tests every read surface against the live API with known
-// targets (jack / tweet 20 / "twitter"). It never fails on an upstream error;
-// it logs ok/err/count per op and a final tally, so one run shows exactly which
-// endpoints work live. Run with:
-//
-//	go test -tags live -run TestLiveReads -count=1 -v ./internal/xapi/
-func TestLiveReads(t *testing.T) {
+// Known targets the read smokes run against.
+const (
+	liveHandle  = "jack"
+	liveTweetID = "20"
+	liveQuery   = "twitter"
+)
+
+// Ids that may rotate or 404; each smoke reports the first that resolves.
+var (
+	liveListIDs = []string{
+		"1455045069516357634", "1494877848087187461",
+		"1729635365319802902", "1141162794290520064",
+	}
+	liveCommunityIDs = []string{
+		"1501272736215322629", "1489422448332197888", "1783990533192651232",
+	}
+	liveSpaceIDs = []string{"1mrxmayRyrQxy", "1vOxwjaWEbdJB"}
+)
+
+// liveSmoke drives one live read sweep, logging ok/fail per op. It never fails
+// the test on an upstream error, so a run shows exactly which endpoints work.
+type liveSmoke struct {
+	t  *testing.T
+	c  *XClient
+	ok int
+	no int
+}
+
+// newLiveSmoke builds a client from cookie.txt, skipping when it is absent.
+func newLiveSmoke(t *testing.T) *liveSmoke {
+	t.Helper()
 	acct := loadLiveAccount(t)
 	sess, err := NewSession("", "", "", "")
 	if err != nil {
 		t.Fatalf("NewSession: %v", err)
 	}
-	c := NewClientFor(sess, acct)
+	return &liveSmoke{t: t, c: NewClientFor(sess, acct)}
+}
 
-	var ok, fail int
-	report := func(name string, n int, err error) {
-		if err != nil {
-			fail++
-			t.Logf("  FAIL %-24s %v", name, err)
+func (s *liveSmoke) report(name string, n int, err error) {
+	if err != nil {
+		s.no++
+		s.t.Logf("  FAIL %-24s %v", name, err)
+		return
+	}
+	s.ok++
+	s.t.Logf("  ok   %-24s n=%d", name, n)
+}
+
+// tweets and users adapt the two paginated return shapes onto report.
+func (s *liveSmoke) tweets(name string, f func() ([]Tweet, string, error)) {
+	got, _, err := f()
+	s.report(name, len(got), err)
+}
+
+func (s *liveSmoke) users(name string, f func() ([]XUser, string, error)) {
+	got, _, err := f()
+	s.report(name, len(got), err)
+}
+
+// firstTweets reports the first id whose read succeeds, else the last error.
+func (s *liveSmoke) firstTweets(name string, ids []string, f func(string) ([]Tweet, string, error)) {
+	var lastErr error
+	for _, id := range ids {
+		got, _, err := f(id)
+		if err == nil {
+			s.report(name+"("+id+")", len(got), nil)
 			return
 		}
-		ok++
-		t.Logf("  ok   %-24s n=%d", name, n)
+		lastErr = err
 	}
-	// helpers to adapt return shapes
-	tw := func(name string, f func() ([]Tweet, string, error)) {
-		s, _, e := f()
-		report(name, len(s), e)
-	}
-	us := func(name string, f func() ([]XUser, string, error)) {
-		s, _, e := f()
-		report(name, len(s), e)
-	}
+	s.report(name, 0, lastErr)
+}
 
-	const h, id, q = "jack", "20", "twitter"
+// firstUsers is firstTweets for the user-returning reads.
+func (s *liveSmoke) firstUsers(name string, ids []string, f func(string) ([]XUser, string, error)) {
+	var lastErr error
+	for _, id := range ids {
+		got, _, err := f(id)
+		if err == nil {
+			s.report(name+"("+id+")", len(got), nil)
+			return
+		}
+		lastErr = err
+	}
+	s.report(name, 0, lastErr)
+}
 
-	// user surfaces
-	if u, e := c.GetUser(h); e == nil {
-		report("GetUser", 1, nil)
-		t.Logf("       jack rest_id=%s", u.RestID)
+// firstRaw is firstTweets for raw-passthrough reads keyed by one id.
+func (s *liveSmoke) firstRaw(name string, ids []string, f func(string) (map[string]any, error)) {
+	var lastErr error
+	for _, id := range ids {
+		got, err := f(id)
+		if err == nil {
+			s.report(name+"("+id+")", len(got), nil)
+			return
+		}
+		lastErr = err
+	}
+	s.report(name, 0, lastErr)
+}
+
+// done logs the tally. Some fails are environment WAF blocks (by-rest-id) or
+// expired ephemeral ids rather than parser bugs.
+func (s *liveSmoke) done() {
+	s.t.Logf("SUMMARY: %d ok, %d fail (of %d)", s.ok, s.no, s.ok+s.no)
+}
+
+// TestLiveReadsUsers smokes the profile and batch-lookup surfaces.
+//
+//	go test -tags live -run TestLiveReads -count=1 -v ./internal/xapi/
+func TestLiveReadsUsers(t *testing.T) {
+	s := newLiveSmoke(t)
+	defer s.done()
+
+	u, err := s.c.GetUser(liveHandle)
+	s.report("GetUser", 1, err)
+	if err == nil {
+		t.Logf("       %s rest_id=%s", liveHandle, u.RestID)
+	}
+	_, err = s.c.GetUserByID("12")
+	s.report("GetUserByID", 1, err)
+	_, err = s.c.UserAbout(liveHandle)
+	s.report("UserAbout", 1, err)
+	us, err := s.c.UsersByIDs([]string{"12"})
+	s.report("UsersByIDs", len(us), err)
+	tws, err := s.c.TweetsByIDs([]string{liveTweetID})
+	s.report("TweetsByIDs", len(tws), err)
+}
+
+// TestLiveReadsTimelines smokes the profile timelines and search.
+func TestLiveReadsTimelines(t *testing.T) {
+	s := newLiveSmoke(t)
+	defer s.done()
+
+	s.tweets("UserTweets", func() ([]Tweet, string, error) { return s.c.UserTweets(liveHandle, 3, "") })
+	s.tweets("UserReplies", func() ([]Tweet, string, error) { return s.c.UserReplies(liveHandle, 3, "") })
+	s.tweets("UserMedia", func() ([]Tweet, string, error) { return s.c.UserMedia(liveHandle, 3, "") })
+	s.tweets("UserHighlights", func() ([]Tweet, string, error) { return s.c.UserHighlights(liveHandle, 3, "") })
+	s.tweets("Likes", func() ([]Tweet, string, error) { return s.c.Likes(liveHandle, 3, "") })
+	s.tweets("Search(Top)", func() ([]Tweet, string, error) { return s.c.Search(liveQuery, "Top", 3, "") })
+	s.tweets("Search(Latest)", func() ([]Tweet, string, error) { return s.c.Search(liveQuery, "Latest", 3, "") })
+	s.users("SearchUsers", func() ([]XUser, string, error) { return s.c.SearchUsers(liveQuery, 3, "") })
+}
+
+// TestLiveReadsTweetDetail smokes the single-tweet and conversation surfaces.
+func TestLiveReadsTweetDetail(t *testing.T) {
+	s := newLiveSmoke(t)
+	defer s.done()
+
+	th, err := s.c.GetTweet(liveTweetID)
+	if err == nil {
+		s.report("GetTweet", len(th.Replies), nil)
 	} else {
-		report("GetUser", 0, e)
+		s.report("GetTweet", 0, err)
 	}
-	if _, e := c.GetUserByID("12"); true {
-		report("GetUserByID", 1, e)
-	}
-	if _, e := c.UserAbout(h); true {
-		report("UserAbout", 1, e)
-	}
-	if s, e := c.UsersByIDs([]string{"12"}); true {
-		report("UsersByIDs", len(s), e)
-	}
-	if s, e := c.TweetsByIDs([]string{id}); true {
-		report("TweetsByIDs", len(s), e)
-	}
+	_, err = s.c.GetTweetResult(liveTweetID)
+	s.report("GetTweetResult", 1, err)
+	thread, err := s.c.TweetThread(liveTweetID, "relevance")
+	s.report("TweetThread", len(thread), err)
+	replies, err := s.c.TweetReplies(liveTweetID, "relevance")
+	s.report("TweetReplies", len(replies), err)
+}
 
-	// timelines
-	tw("UserTweets", func() ([]Tweet, string, error) { return c.UserTweets(h, 3, "") })
-	tw("UserReplies", func() ([]Tweet, string, error) { return c.UserReplies(h, 3, "") })
-	tw("UserMedia", func() ([]Tweet, string, error) { return c.UserMedia(h, 3, "") })
-	tw("UserHighlights", func() ([]Tweet, string, error) { return c.UserHighlights(h, 3, "") })
-	tw("Likes", func() ([]Tweet, string, error) { return c.Likes(h, 3, "") })
-	tw("Search(Top)", func() ([]Tweet, string, error) { return c.Search(q, "Top", 3, "") })
-	tw("Search(Latest)", func() ([]Tweet, string, error) { return c.Search(q, "Latest", 3, "") })
-	us("SearchUsers", func() ([]XUser, string, error) { return c.SearchUsers(q, 3, "") })
+// TestLiveReadsGraph smokes the follower/engagement graph reads.
+func TestLiveReadsGraph(t *testing.T) {
+	s := newLiveSmoke(t)
+	defer s.done()
 
-	// tweet detail
-	if th, e := c.GetTweet(id); e == nil {
-		report("GetTweet", len(th.Replies), nil)
-	} else {
-		report("GetTweet", 0, e)
-	}
-	if _, e := c.GetTweetResult(id); true {
-		report("GetTweetResult", 1, e)
-	}
-	if s, e := c.TweetThread(id, "relevance"); true {
-		report("TweetThread", len(s), e)
-	}
-	if s, e := c.TweetReplies(id, "relevance"); true {
-		report("TweetReplies", len(s), e)
-	}
+	s.users("Followers", func() ([]XUser, string, error) { return s.c.Followers(liveHandle, 3, "") })
+	s.users("Following", func() ([]XUser, string, error) { return s.c.Following(liveHandle, 3, "") })
+	s.users("VerifiedFollowers", func() ([]XUser, string, error) { return s.c.VerifiedFollowers(liveHandle, 3, "") })
+	s.users("Subscriptions", func() ([]XUser, string, error) { return s.c.Subscriptions(liveHandle, 3, "") })
+	s.users("Retweeters", func() ([]XUser, string, error) { return s.c.Retweeters(liveTweetID, 3, "") })
+	s.users("Favoriters", func() ([]XUser, string, error) { return s.c.Favoriters(liveTweetID, 3, "") })
+}
 
-	// social graph
-	us("Followers", func() ([]XUser, string, error) { return c.Followers(h, 3, "") })
-	us("Following", func() ([]XUser, string, error) { return c.Following(h, 3, "") })
-	us("VerifiedFollowers", func() ([]XUser, string, error) { return c.VerifiedFollowers(h, 3, "") })
-	us("Subscriptions", func() ([]XUser, string, error) { return c.Subscriptions(h, 3, "") })
-	us("Retweeters", func() ([]XUser, string, error) { return c.Retweeters(id, 3, "") })
-	us("Favoriters", func() ([]XUser, string, error) { return c.Favoriters(id, 3, "") })
+// TestLiveReadsAccountScoped smokes the reads that depend on who is logged in.
+func TestLiveReadsAccountScoped(t *testing.T) {
+	s := newLiveSmoke(t)
+	defer s.done()
 
-	// account-scoped
-	tw("Home", func() ([]Tweet, string, error) { return c.Home(3, "") })
-	tw("HomeLatest", func() ([]Tweet, string, error) { return c.HomeLatest(3, "") })
-	tw("Bookmarks", func() ([]Tweet, string, error) { return c.Bookmarks(3, "") })
-	if s, e := c.ScheduledTweets(); true {
-		report("ScheduledTweets", len(s), e)
-	}
+	s.tweets("Home", func() ([]Tweet, string, error) { return s.c.Home(3, "") })
+	s.tweets("HomeLatest", func() ([]Tweet, string, error) { return s.c.HomeLatest(3, "") })
+	s.tweets("Bookmarks", func() ([]Tweet, string, error) { return s.c.Bookmarks(3, "") })
+	sched, err := s.c.ScheduledTweets()
+	s.report("ScheduledTweets", len(sched), err)
 
-	// raw-passthrough reads that need no id
-	if m, e := c.CallRaw("NotificationsTimeline", map[string]any{}, "", 5); true {
-		report("Notifications", len(m), e)
-	}
-	if m, e := c.CallRaw("GenericTimelineById", map[string]any{"timelineId": "VGltZWxpbmU6DAC2CwABAAAACHRyZW5kaW5nAAA"}, "", 5); true {
-		report("Trends", len(m), e)
-	}
-	if m, e := c.CallRaw("BookmarkFoldersSlice", map[string]any{}, "", 0); true {
-		report("BookmarkFolders", len(m), e)
-	}
+	notif, err := s.c.CallRaw("NotificationsTimeline", map[string]any{}, "", 5)
+	s.report("Notifications", len(notif), err)
+	trends, err := s.c.CallRaw("GenericTimelineById",
+		map[string]any{"timelineId": "VGltZWxpbmU6DAC2CwABAAAACHRyZW5kaW5nAAA"}, "", 5)
+	s.report("Trends", len(trends), err)
+	folders, err := s.c.CallRaw("BookmarkFoldersSlice", map[string]any{}, "", 0)
+	s.report("BookmarkFolders", len(folders), err)
+	s.bookmarkFolderTweets(folders, err)
+}
 
-	// id-scoped reads: try several known ids, report the first that resolves.
-	listIDs := []string{"1455045069516357634", "1494877848087187461", "1729635365319802902", "1141162794290520064"}
-	commIDs := []string{"1501272736215322629", "1489422448332197888", "1783990533192651232"}
-	firstTweets := func(name string, ids []string, f func(id string) ([]Tweet, string, error)) {
-		var lastErr error
-		for _, gid := range ids {
-			s, _, e := f(gid)
-			if e == nil {
-				report(name+"("+gid+")", len(s), nil)
-				return
-			}
-			lastErr = e
-		}
-		report(name, 0, lastErr)
+// bookmarkFolderTweets reads one folder's tweets, taking the id from the
+// account's own folder slice. It is skipped when the account has no folder.
+func (s *liveSmoke) bookmarkFolderTweets(folders map[string]any, err error) {
+	if err != nil {
+		return
 	}
-	firstUsers := func(name string, ids []string, f func(id string) ([]XUser, string, error)) {
-		var lastErr error
-		for _, gid := range ids {
-			s, _, e := f(gid)
-			if e == nil {
-				report(name+"("+gid+")", len(s), nil)
-				return
-			}
-			lastErr = e
-		}
-		report(name, 0, lastErr)
+	fid := findFolderID(folders)
+	if fid == "" {
+		s.t.Log("  skip BookmarkFolderTweets: account has no bookmark folder")
+		return
 	}
-	firstTweets("ListTweets", listIDs, func(id string) ([]Tweet, string, error) { return c.ListTweets(id, 3, "") })
-	firstUsers("ListMembers", listIDs, func(id string) ([]XUser, string, error) { return c.ListMembers(id, 3, "") })
-	firstTweets("CommunityTweets", commIDs, func(id string) ([]Tweet, string, error) { return c.CommunityTweets(id, 3, "") })
-	firstUsers("CommunityMembers", commIDs, func(id string) ([]XUser, string, error) { return c.CommunityMembers(id, 3, "") })
-	firstUsers("CommunityModerators", commIDs, func(id string) ([]XUser, string, error) { return c.CommunityModerators(id, 3, "") })
-	{
-		var lastErr error
-		done := false
-		for _, gid := range commIDs {
-			m, e := c.CallRaw("CommunityQuery", map[string]any{"communityId": gid}, "", 0)
-			if e == nil {
-				report("CommunityInfo("+gid+")", len(m), nil)
-				done = true
-				break
-			}
-			lastErr = e
-		}
-		if !done {
-			report("CommunityInfo", 0, lastErr)
-		}
-	}
+	got, _, e := s.c.BookmarkFolderTweets(fid, 3, "")
+	s.report("BookmarkFolderTweets("+fid+")", len(got), e)
+}
 
-	// Space: ephemeral ids may be gone, but the op path is still exercised.
-	{
-		var lastErr error
-		done := false
-		for _, sid := range []string{"1mrxmayRyrQxy", "1vOxwjaWEbdJB"} {
-			m, e := c.CallRaw("AudioSpaceById", map[string]any{"id": sid}, "", 0)
-			if e == nil {
-				report("SpaceInfo("+sid+")", len(m), nil)
-				done = true
-				break
-			}
-			lastErr = e
-		}
-		if !done {
-			report("SpaceInfo (ids likely expired)", 0, lastErr)
-		}
-	}
-	// BookmarkFolderTweets: take a folder id from the account's own folder slice.
-	if raw, e := c.CallRaw("BookmarkFoldersSlice", map[string]any{}, "", 0); e == nil {
-		if fid := findFolderID(raw); fid != "" {
-			s, _, e2 := c.BookmarkFolderTweets(fid, 3, "")
-			report("BookmarkFolderTweets("+fid+")", len(s), e2)
-		} else {
-			t.Log("  skip BookmarkFolderTweets: account has no bookmark folder")
-		}
-	}
+// TestLiveReadsIDScoped smokes the reads keyed by a list, community or Space id.
+// Those ids rotate, so each read reports the first one that resolves.
+func TestLiveReadsIDScoped(t *testing.T) {
+	s := newLiveSmoke(t)
+	defer s.done()
 
-	t.Logf("SUMMARY: %d ok, %d fail (of %d)", ok, fail, ok+fail)
-	if fail > 0 {
-		t.Logf("NOTE: some fails are environment WAF blocks (by-rest-id) or expired ephemeral ids, not parser bugs.")
-	}
+	s.firstTweets("ListTweets", liveListIDs,
+		func(id string) ([]Tweet, string, error) { return s.c.ListTweets(id, 3, "") })
+	s.firstUsers("ListMembers", liveListIDs,
+		func(id string) ([]XUser, string, error) { return s.c.ListMembers(id, 3, "") })
+	s.firstTweets("CommunityTweets", liveCommunityIDs,
+		func(id string) ([]Tweet, string, error) { return s.c.CommunityTweets(id, 3, "") })
+	s.firstUsers("CommunityMembers", liveCommunityIDs,
+		func(id string) ([]XUser, string, error) { return s.c.CommunityMembers(id, 3, "") })
+	s.firstUsers("CommunityModerators", liveCommunityIDs,
+		func(id string) ([]XUser, string, error) { return s.c.CommunityModerators(id, 3, "") })
+	s.firstRaw("CommunityInfo", liveCommunityIDs, func(id string) (map[string]any, error) {
+		return s.c.CallRaw("CommunityQuery", map[string]any{"communityId": id}, "", 0)
+	})
+	// Space ids are ephemeral; the op path is exercised even when they are gone.
+	s.firstRaw("SpaceInfo", liveSpaceIDs, func(id string) (map[string]any, error) {
+		return s.c.CallRaw("AudioSpaceById", map[string]any{"id": id}, "", 0)
+	})
 }

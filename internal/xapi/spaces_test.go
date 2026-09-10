@@ -19,25 +19,16 @@ func TestParseLiveSpaces(t *testing.T) {
 		t.Fatalf("parseLiveSpaces returned %d spaces, want 1", len(got))
 	}
 	sp := got[0]
-	if sp.ID != "1SPACE0000001" {
-		t.Errorf("ID = %q, want 1SPACE0000001", sp.ID)
+	if len(sp.AdminUserIDs) != 1 {
+		t.Fatalf("AdminUserIDs = %v, want one entry", sp.AdminUserIDs)
 	}
-	if sp.Title != "Example Space" {
-		t.Errorf("Title = %q", sp.Title)
-	}
-	if sp.State != "RUNNING" {
-		t.Errorf("State = %q, want RUNNING", sp.State)
-	}
-	if sp.CreatorUserID != "111" {
-		t.Errorf("CreatorUserID = %q, want 111", sp.CreatorUserID)
-	}
-	if sp.TotalLiveListeners != 21 {
-		t.Errorf("TotalLiveListeners = %d, want 21", sp.TotalLiveListeners)
-	}
-	if sp.StartedAt != "2026-09-02T21:13:51.632000000Z" {
-		t.Errorf("StartedAt = %q", sp.StartedAt)
-	}
-	if len(sp.AdminUserIDs) != 1 || sp.AdminUserIDs[0] != "111" {
-		t.Errorf("AdminUserIDs = %v, want [111]", sp.AdminUserIDs)
-	}
+	checkFields(t, []fieldCheck{
+		{"ID", sp.ID, "1SPACE0000001"},
+		{"Title", sp.Title, "Example Space"},
+		{"State", sp.State, "RUNNING"},
+		{"CreatorUserID", sp.CreatorUserID, "111"},
+		{"TotalLiveListeners", sp.TotalLiveListeners, 21},
+		{"StartedAt", sp.StartedAt, "2026-09-02T21:13:51.632000000Z"},
+		{"AdminUserIDs[0]", sp.AdminUserIDs[0], "111"},
+	})
 }

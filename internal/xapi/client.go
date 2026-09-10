@@ -68,35 +68,17 @@ type TweetThread struct {
 
 // call fills an op template with the dynamic variables and replays the request.
 func (c *XClient) call(op string, variables map[string]any) (map[string]any, error) {
-	s, err := spec(op)
+	r, err := opSpecFor(c.sess, op, variables)
 	if err != nil {
 		return nil, err
 	}
-	// Apply any runtime queryId override (bundle auto-refresh) over the embedded one.
-	s.QueryID = c.sess.queryID(op, s.QueryID)
-	// Add any feature flag the live bundle lists for op but ops.json omits.
-	s.Features = c.sess.featuresFor(op, s.Features)
-
-	v := map[string]any{}
-	maps.Copy(v, s.Variables)
-	maps.Copy(v, variables)
-
-	req, err := buildGraphQLRequest(s, op, v)
+	req, err := buildGraphQLRequest(r.op, op, r.vars)
 	if err != nil {
 		return nil, err
 	}
-
-	// x.com attaches x-client-transaction-id to every request. Some ops (search,
-	// bookmark mutations) hard-reject its absence with 404, while others tolerate a
-	// missing one. Generate it for every call; a generation failure only aborts the
-	// ops that strictly require it, so tolerant reads keep working.
-	path := fmt.Sprintf("/i/api/graphql/%s/%s", s.QueryID, op)
-	txValue, txErr := c.sess.transactionID(s.Method, path)
-	if (txErr != nil || txValue == "") && txRequired[op] {
-		if txErr != nil {
-			return nil, fmt.Errorf("%s: %w", op, txErr)
-		}
-		return nil, &TxRequiredError{Op: op}
+	txValue, err := c.transactionIDFor(r.op, op)
+	if err != nil {
+		return nil, err
 	}
 	req.Header = c.sess.headers(c.acct, "en", txValue)
 
@@ -104,25 +86,48 @@ func (c *XClient) call(op string, variables map[string]any) (map[string]any, err
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
-	defer func() { _ = resp.Body.Close() }()
 	c.rateLimit = parseRateLimit(resp.Header)
+	payload, _, err := decodeGraphQL(resp, op)
+	return payload, err
+}
+
+// transactionIDFor returns the x-client-transaction-id for an op. x.com attaches
+// one to every request. Some ops (search, bookmark mutations) hard-reject its
+// absence with 404, while others tolerate a missing one, so a generation failure
+// only aborts the ops listed in txRequired.
+func (c *XClient) transactionIDFor(s OpSpec, op string) (string, error) {
+	path := fmt.Sprintf("/i/api/graphql/%s/%s", s.QueryID, op)
+	txValue, txErr := c.sess.transactionID(s.Method, path)
+	if (txErr != nil || txValue == "") && txRequired[op] {
+		if txErr != nil {
+			return "", fmt.Errorf("%s: %w", op, txErr)
+		}
+		return "", &TxRequiredError{Op: op}
+	}
+	return txValue, nil
+}
+
+// decodeGraphQL closes the response, maps a non-2xx onto UpstreamError and
+// decodes the body. It also reports the HTTP status, which the guest path needs
+// to decide whether re-minting its token is worth a retry.
+func decodeGraphQL(resp *http.Response, op string) (map[string]any, int, error) {
+	defer func() { _ = resp.Body.Close() }()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("%s: read body: %w", op, err)
+		return nil, resp.StatusCode, fmt.Errorf("%s: read body: %w", op, err)
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		code, msg := parseXErrors(body)
-		return nil, &UpstreamError{
+		return nil, resp.StatusCode, &UpstreamError{
 			Op: op, Status: resp.StatusCode, Body: truncate(body, 300),
 			Code: code, Msg: msg, HTML: isHTMLBlock(resp.Header, body),
 		}
 	}
-
 	var out map[string]any
 	if err := json.Unmarshal(body, &out); err != nil {
-		return nil, fmt.Errorf("%s: decode json: %w", op, err)
+		return nil, resp.StatusCode, fmt.Errorf("%s: decode json: %w", op, err)
 	}
-	return out, nil
+	return out, resp.StatusCode, nil
 }
 
 // callForm sends a form-urlencoded POST to a legacy REST 1.1/2.0 endpoint (not

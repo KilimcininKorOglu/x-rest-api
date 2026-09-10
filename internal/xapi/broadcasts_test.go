@@ -18,42 +18,22 @@ func TestParseBroadcast(t *testing.T) {
 	if b == nil {
 		t.Fatal("parseBroadcast returned nil")
 	}
-	if b.ID != "1BROADCAST001" {
-		t.Errorf("ID = %q, want 1BROADCAST001", b.ID)
-	}
-	if b.Title != "Example Broadcast" {
-		t.Errorf("Title = %q, want Example Broadcast", b.Title)
-	}
-	if b.State != "RUNNING" {
-		t.Errorf("State = %q, want RUNNING", b.State)
-	}
-	if b.MediaKey != "28_4001" {
-		t.Errorf("MediaKey = %q, want 28_4001", b.MediaKey)
-	}
-	if b.TotalWatched != 1423 {
-		t.Errorf("TotalWatched = %d, want 1423", b.TotalWatched)
-	}
-	if b.StartTime != 1757000000000 {
-		t.Errorf("StartTime = %d, want 1757000000000", b.StartTime)
-	}
-	if b.EndTime != 1757003600000 {
-		t.Errorf("EndTime = %d, want 1757003600000", b.EndTime)
-	}
-	if b.ReplayStart != 90 {
-		t.Errorf("ReplayStart = %d, want 90", b.ReplayStart)
-	}
-	if !b.AvailableForReplay {
-		t.Error("AvailableForReplay = false, want true")
-	}
 	if b.Broadcaster == nil {
 		t.Fatal("Broadcaster is nil")
 	}
-	if b.Broadcaster.RestID != "222" {
-		t.Errorf("Broadcaster.RestID = %q, want 222", b.Broadcaster.RestID)
-	}
-	if b.Broadcaster.ScreenName != "alice" {
-		t.Errorf("Broadcaster.ScreenName = %q, want alice", b.Broadcaster.ScreenName)
-	}
+	checkFields(t, []fieldCheck{
+		{"ID", b.ID, "1BROADCAST001"},
+		{"Title", b.Title, "Example Broadcast"},
+		{"State", b.State, "RUNNING"},
+		{"MediaKey", b.MediaKey, "28_4001"},
+		{"TotalWatched", b.TotalWatched, 1423},
+		{"StartTime", b.StartTime, int64(1757000000000)},
+		{"EndTime", b.EndTime, int64(1757003600000)},
+		{"ReplayStart", b.ReplayStart, int64(90)},
+		{"AvailableForReplay", b.AvailableForReplay, true},
+		{"Broadcaster.RestID", b.Broadcaster.RestID, "222"},
+		{"Broadcaster.ScreenName", b.Broadcaster.ScreenName, "alice"},
+	})
 }
 
 // TestParseBroadcastRejectsEmpty verifies parseBroadcast returns nil rather than a

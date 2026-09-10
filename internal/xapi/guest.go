@@ -141,23 +141,7 @@ func (s *Session) doGuestCall(op string, variables map[string]any) (map[string]a
 	if err != nil {
 		return nil, 0, fmt.Errorf("guest %s: %w", op, err)
 	}
-	defer func() { _ = resp.Body.Close() }()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, resp.StatusCode, err
-	}
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		code, msg := parseXErrors(body)
-		return nil, resp.StatusCode, &UpstreamError{
-			Op: op, Status: resp.StatusCode, Body: truncate(body, 300),
-			Code: code, Msg: msg, HTML: isHTMLBlock(resp.Header, body),
-		}
-	}
-	var out map[string]any
-	if err := json.Unmarshal(body, &out); err != nil {
-		return nil, resp.StatusCode, fmt.Errorf("guest %s: decode json: %w", op, err)
-	}
-	return out, resp.StatusCode, nil
+	return decodeGraphQL(resp, "guest "+op)
 }
 
 // resolvedOp is an op spec with the session's queryId and feature overrides and

@@ -19,41 +19,22 @@ func TestParseTrends(t *testing.T) {
 		t.Fatalf("parseTrends returned %d trends, want 3", len(tr))
 	}
 
-	p := tr[0]
-	if p.Name != "Acme Widget" {
-		t.Errorf("promoted Name = %q", p.Name)
-	}
-	if !p.Promoted {
-		t.Error("promoted trend not flagged Promoted")
-	}
-	if p.AdvertiserScreenName != "acmebrand" {
-		t.Errorf("AdvertiserScreenName = %q", p.AdvertiserScreenName)
-	}
-	if p.MetaDescription != "Promoted by acmebrand" {
-		t.Errorf("MetaDescription = %q", p.MetaDescription)
-	}
-	if p.Query != "Acme Widget" {
-		t.Errorf("promoted Query = %q", p.Query)
-	}
+	p, o, h := tr[0], tr[1], tr[2]
+	checkFields(t, []fieldCheck{
+		{"promoted Name", p.Name, "Acme Widget"},
+		{"promoted Promoted", p.Promoted, true},
+		{"promoted AdvertiserScreenName", p.AdvertiserScreenName, "acmebrand"},
+		{"promoted MetaDescription", p.MetaDescription, "Promoted by acmebrand"},
+		{"promoted Query", p.Query, "Acme Widget"},
 
-	o := tr[1]
-	if o.Name != "Local Elections" || o.Promoted {
-		t.Errorf("organic trend = %+v", o)
-	}
-	if o.DomainContext != "Trending in Wonderland" {
-		t.Errorf("DomainContext = %q", o.DomainContext)
-	}
-	if o.Query != `"Local Elections"` {
-		t.Errorf("organic Query = %q, want quoted phrase", o.Query)
-	}
+		{"organic Name", o.Name, "Local Elections"},
+		{"organic Promoted", o.Promoted, false},
+		{"organic DomainContext", o.DomainContext, "Trending in Wonderland"},
+		{"organic Query", o.Query, `"Local Elections"`},
 
-	h := tr[2]
-	if h.Name != "#günaydın" {
-		t.Errorf("hashtag Name = %q", h.Name)
-	}
-	if h.Query != "#günaydın" {
-		t.Errorf("hashtag Query = %q", h.Query)
-	}
+		{"hashtag Name", h.Name, "#günaydın"},
+		{"hashtag Query", h.Query, "#günaydın"},
+	})
 }
 
 // TestParseExploreTrends verifies parseTrends handles the deeper ExplorePage

@@ -162,21 +162,22 @@ func TestParseUserNewSchema(t *testing.T) {
 	if u == nil {
 		t.Fatal("nil user")
 	}
-	if u.FollowersCount != 11936016 || u.FriendsCount != 3 {
-		t.Errorf("relationship_counts not read: followers=%d friends=%d", u.FollowersCount, u.FriendsCount)
+	if len(u.DescriptionLinks) != 1 {
+		t.Fatalf("profile_bio description links not read: %+v", u.DescriptionLinks)
 	}
-	if u.StatusesCount != 30970 || u.MediaCount != 2974 {
-		t.Errorf("tweet_counts not read: statuses=%d media=%d", u.StatusesCount, u.MediaCount)
+	if u.CreatedAt == "" {
+		t.Error("CreatedAt is empty, want the core value")
 	}
-	if u.Description != "no state is the best state" {
-		t.Errorf("profile_bio description not read: %q", u.Description)
-	}
-	if len(u.DescriptionLinks) != 1 || u.DescriptionLinks[0].URL != "https://go.dev" {
-		t.Errorf("profile_bio description links not read: %+v", u.DescriptionLinks)
-	}
-	if u.ScreenName != "jack" || u.CreatedAt == "" || !u.Blue {
-		t.Errorf("core/blue fields wrong: %+v", u)
-	}
+	checkFields(t, []fieldCheck{
+		{"FollowersCount", u.FollowersCount, 11936016},
+		{"FriendsCount", u.FriendsCount, 3},
+		{"StatusesCount", u.StatusesCount, 30970},
+		{"MediaCount", u.MediaCount, 2974},
+		{"Description", u.Description, "no state is the best state"},
+		{"DescriptionLinks[0].URL", u.DescriptionLinks[0].URL, "https://go.dev"},
+		{"ScreenName", u.ScreenName, "jack"},
+		{"Blue", u.Blue, true},
+	})
 }
 
 // richTweetFixture carries media, entities, a quoted tweet, and a poll card.
@@ -216,48 +217,87 @@ const richTweetFixture = `{
   ]}]}}
 }`
 
-func TestParseRichTweet(t *testing.T) {
+// richTweet parses the rich fixture and returns its single tweet. The rich
+// assertions are split across focused tests, so they all start here.
+func richTweet(t *testing.T) Tweet {
+	t.Helper()
 	tweets, _ := parseTimelineTweets(decode(t, richTweetFixture))
 	if len(tweets) != 1 {
 		t.Fatalf("want 1 tweet, got %d", len(tweets))
 	}
-	tw := tweets[0]
-	if tw.ConversationID != "50" || tw.InReplyToTweetID != "49" || tw.InReplyToScreenName != "carol" || tw.BookmarkCount != 3 {
-		t.Errorf("reply/conversation fields: %+v", tw)
+	return tweets[0]
+}
+
+func TestParseRichTweetReplyFields(t *testing.T) {
+	tw := richTweet(t)
+	checkFields(t, []fieldCheck{
+		{"ConversationID", tw.ConversationID, "50"},
+		{"InReplyToTweetID", tw.InReplyToTweetID, "49"},
+		{"InReplyToScreenName", tw.InReplyToScreenName, "carol"},
+		{"BookmarkCount", tw.BookmarkCount, 3},
+		{"CommunityNote", tw.CommunityNote, "Readers added context"},
+	})
+}
+
+func TestParseRichTweetEntities(t *testing.T) {
+	tw := richTweet(t)
+	if len(tw.Hashtags) != 1 || len(tw.Cashtags) != 1 {
+		t.Fatalf("hashtags/cashtags: %+v / %+v", tw.Hashtags, tw.Cashtags)
 	}
-	if len(tw.Hashtags) != 1 || tw.Hashtags[0] != "golang" || len(tw.Cashtags) != 1 || tw.Cashtags[0] != "GO" {
-		t.Errorf("hashtags/cashtags: %+v", tw)
+	if len(tw.Mentions) != 1 {
+		t.Fatalf("mentions: %+v", tw.Mentions)
 	}
-	if len(tw.Mentions) != 1 || tw.Mentions[0].ScreenName != "bob" {
-		t.Errorf("mentions: %+v", tw.Mentions)
+	if len(tw.Links) != 1 {
+		t.Fatalf("links: %+v", tw.Links)
 	}
-	if len(tw.Links) != 1 || tw.Links[0].URL != "https://go.dev" || tw.Links[0].TCoURL != "https://t.co/x" {
-		t.Errorf("links: %+v", tw.Links)
-	}
+	checkFields(t, []fieldCheck{
+		{"Hashtags[0]", tw.Hashtags[0], "golang"},
+		{"Cashtags[0]", tw.Cashtags[0], "GO"},
+		{"Mentions[0].ScreenName", tw.Mentions[0].ScreenName, "bob"},
+		{"Links[0].URL", tw.Links[0].URL, "https://go.dev"},
+		{"Links[0].TCoURL", tw.Links[0].TCoURL, "https://t.co/x"},
+	})
+}
+
+func TestParseRichTweetMedia(t *testing.T) {
+	tw := richTweet(t)
 	if tw.Media == nil || len(tw.Media.Photos) != 1 || len(tw.Media.Videos) != 1 {
 		t.Fatalf("media: %+v", tw.Media)
 	}
-	if tw.Media.Videos[0].DurationMS != 5000 || len(tw.Media.Videos[0].Variants) != 2 {
-		t.Errorf("video variants: %+v", tw.Media.Videos[0])
+	checkFields(t, []fieldCheck{
+		{"Videos[0].DurationMS", tw.Media.Videos[0].DurationMS, 5000},
+		{"len(Videos[0].Variants)", len(tw.Media.Videos[0].Variants), 2},
+	})
+}
+
+func TestParseRichTweetQuotedAndPoll(t *testing.T) {
+	tw := richTweet(t)
+	if tw.Quoted == nil {
+		t.Fatal("quoted is nil")
 	}
-	if tw.Quoted == nil || tw.Quoted.RestID != "40" || tw.Quoted.Text != "quoted body" {
-		t.Errorf("quoted: %+v", tw.Quoted)
-	}
-	if tw.Card == nil || tw.Card.Type != "poll" || tw.Card.Poll == nil || len(tw.Card.Poll.Options) != 2 {
+	if tw.Card == nil || tw.Card.Poll == nil || len(tw.Card.Poll.Options) != 2 {
 		t.Fatalf("card/poll: %+v", tw.Card)
 	}
-	if tw.Card.Poll.Options[0].Label != "Yes" || tw.Card.Poll.Options[0].Votes != 10 || !tw.Card.Poll.Finished {
-		t.Errorf("poll options: %+v", tw.Card.Poll)
+	checkFields(t, []fieldCheck{
+		{"Quoted.RestID", tw.Quoted.RestID, "40"},
+		{"Quoted.Text", tw.Quoted.Text, "quoted body"},
+		{"Card.Type", tw.Card.Type, "poll"},
+		{"Poll.Options[0].Label", tw.Card.Poll.Options[0].Label, "Yes"},
+		{"Poll.Options[0].Votes", tw.Card.Poll.Options[0].Votes, 10},
+		{"Poll.Finished", tw.Card.Poll.Finished, true},
+	})
+}
+
+func TestParseRichTweetAttribution(t *testing.T) {
+	tw := richTweet(t)
+	if tw.Attribution == nil {
+		t.Fatal("attribution is nil")
 	}
-	if tw.CommunityNote != "Readers added context" {
-		t.Errorf("community note: %q", tw.CommunityNote)
-	}
-	if tw.Attribution == nil || tw.Attribution.ScreenName != "orig" || tw.Attribution.RestID != "8" {
-		t.Fatalf("attribution: %+v", tw.Attribution)
-	}
-	if tw.AttributionLink != "/orig/status/999" {
-		t.Errorf("attribution link: %q", tw.AttributionLink)
-	}
+	checkFields(t, []fieldCheck{
+		{"Attribution.ScreenName", tw.Attribution.ScreenName, "orig"},
+		{"Attribution.RestID", tw.Attribution.RestID, "8"},
+		{"AttributionLink", tw.AttributionLink, "/orig/status/999"},
+	})
 }
 
 // richUserFixture carries profile images, blue, protected, pinned ids, and counts.
@@ -277,21 +317,24 @@ func TestParseRichUser(t *testing.T) {
 	if u == nil {
 		t.Fatal("nil user")
 	}
-	if !u.Blue || u.BlueType != "Business" || !u.Protected {
-		t.Errorf("blue/protected: %+v", u)
+	if len(u.PinnedTweetIDs) != 1 {
+		t.Fatalf("pinned: %+v", u.PinnedTweetIDs)
 	}
-	if u.FavouritesCount != 4 || u.ListedCount != 2 || u.MediaCount != 8 {
-		t.Errorf("counts: %+v", u)
+	if len(u.DescriptionLinks) != 1 {
+		t.Fatalf("description links: %+v", u.DescriptionLinks)
 	}
-	if u.ProfileImageURL != "https://pbs/pic.jpg" || u.ProfileBannerURL != "https://pbs/ban.jpg" {
-		t.Errorf("profile images: %+v", u)
-	}
-	if len(u.PinnedTweetIDs) != 1 || u.PinnedTweetIDs[0] != "111" {
-		t.Errorf("pinned: %+v", u.PinnedTweetIDs)
-	}
-	if len(u.DescriptionLinks) != 1 || u.DescriptionLinks[0].URL != "https://acme.co" {
-		t.Errorf("description links: %+v", u.DescriptionLinks)
-	}
+	checkFields(t, []fieldCheck{
+		{"Blue", u.Blue, true},
+		{"BlueType", u.BlueType, "Business"},
+		{"Protected", u.Protected, true},
+		{"FavouritesCount", u.FavouritesCount, 4},
+		{"ListedCount", u.ListedCount, 2},
+		{"MediaCount", u.MediaCount, 8},
+		{"ProfileImageURL", u.ProfileImageURL, "https://pbs/pic.jpg"},
+		{"ProfileBannerURL", u.ProfileBannerURL, "https://pbs/ban.jpg"},
+		{"PinnedTweetIDs[0]", u.PinnedTweetIDs[0], "111"},
+		{"DescriptionLinks[0].URL", u.DescriptionLinks[0].URL, "https://acme.co"},
+	})
 }
 
 // TestOpsEmbedded confirms every wired op is present in the embedded ops.json.

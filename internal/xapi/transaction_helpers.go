@@ -18,25 +18,42 @@ func newCubic(c []float64) cubic { return cubic{c: c} }
 
 // value evaluates the curve at time t, mirroring the reference get_value.
 func (cu cubic) value(t float64) float64 {
-	c := cu.c
 	if t <= 0.0 {
-		g := 0.0
-		if c[0] > 0.0 {
-			g = c[1] / c[0]
-		} else if c[1] == 0.0 && c[2] > 0.0 {
-			g = c[3] / c[2]
-		}
-		return g * t
+		return cu.slopeBelowZero() * t
 	}
 	if t >= 1.0 {
-		g := 0.0
-		if c[2] < 1.0 {
-			g = (c[3] - 1.0) / (c[2] - 1.0)
-		} else if c[2] == 1.0 && c[0] < 1.0 {
-			g = (c[1] - 1.0) / (c[0] - 1.0)
-		}
-		return 1.0 + g*(t-1.0)
+		return 1.0 + cu.slopeAboveOne()*(t-1.0)
 	}
+	return cu.solve(t)
+}
+
+// slopeBelowZero is the gradient the curve is extrapolated with before t=0.
+func (cu cubic) slopeBelowZero() float64 {
+	c := cu.c
+	switch {
+	case c[0] > 0.0:
+		return c[1] / c[0]
+	case c[1] == 0.0 && c[2] > 0.0:
+		return c[3] / c[2]
+	}
+	return 0.0
+}
+
+// slopeAboveOne is the gradient the curve is extrapolated with past t=1.
+func (cu cubic) slopeAboveOne() float64 {
+	c := cu.c
+	switch {
+	case c[2] < 1.0:
+		return (c[3] - 1.0) / (c[2] - 1.0)
+	case c[2] == 1.0 && c[0] < 1.0:
+		return (c[1] - 1.0) / (c[0] - 1.0)
+	}
+	return 0.0
+}
+
+// solve binary-searches the curve parameter whose x matches t, then returns its y.
+func (cu cubic) solve(t float64) float64 {
+	c := cu.c
 	start, end, mid := 0.0, 1.0, 0.0
 	for start < end {
 		mid = (start + end) / 2

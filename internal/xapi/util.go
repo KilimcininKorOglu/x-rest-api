@@ -90,19 +90,35 @@ func normalizeHandle(h string) string {
 // userRefFromURL extracts a handle or numeric id from an x.com/twitter.com profile
 // URL, or "" when the string is not such a URL. A missing scheme is tolerated.
 func userRefFromURL(s string) string {
+	u, ok := parseProfileURL(s)
+	if !ok {
+		return ""
+	}
+	return userRefFromPath(u.Path)
+}
+
+// parseProfileURL parses s as a profile URL, tolerating a missing scheme, and
+// reports whether its host is one this API resolves handles from.
+func parseProfileURL(s string) (*url.URL, bool) {
 	if !strings.Contains(s, "://") {
 		s = "https://" + s
 	}
 	u, err := url.Parse(s)
 	if err != nil {
-		return ""
+		return nil, false
 	}
 	host := strings.ToLower(strings.TrimPrefix(u.Hostname(), "www."))
 	if host != "x.com" && host != "twitter.com" && host != "mobile.twitter.com" {
-		return ""
+		return nil, false
 	}
+	return u, true
+}
+
+// userRefFromPath resolves a profile path to a handle or a numeric id, or "" when
+// the path names something other than a profile.
+func userRefFromPath(path string) string {
 	var segs []string
-	for seg := range strings.SplitSeq(strings.Trim(u.Path, "/"), "/") {
+	for seg := range strings.SplitSeq(strings.Trim(path, "/"), "/") {
 		if seg != "" {
 			segs = append(segs, seg)
 		}

@@ -29,7 +29,10 @@ func TestSettingsRoundtrip(t *testing.T) {
 	}
 }
 
-func TestPerOpLocking(t *testing.T) {
+// twoAccountStore returns a store holding acc1 and acc2, and acc1's id. The
+// per-op locking tests all start from this shape.
+func twoAccountStore(t *testing.T) (*Store, int64) {
+	t.Helper()
 	s := openTemp(t)
 	id1, err := s.CreateAccount("acc1", "at1", "ct1", true)
 	if err != nil {
@@ -38,32 +41,45 @@ func TestPerOpLocking(t *testing.T) {
 	if _, err := s.CreateAccount("acc2", "at2", "ct2", true); err != nil {
 		t.Fatalf("create acc2: %v", err)
 	}
+	return s, id1
+}
 
-	// Lock acc1 for SearchTimeline only.
-	if err := s.LockAccountOp(id1, "SearchTimeline", time.Now().Add(time.Hour)); err != nil {
-		t.Fatalf("lock: %v", err)
+// lockOp locks an account for one op until when, failing the test on error.
+func lockOp(t *testing.T, s *Store, id int64, op string, when time.Time) {
+	t.Helper()
+	if err := s.LockAccountOp(id, op, when); err != nil {
+		t.Fatalf("lock %s: %v", op, err)
 	}
+}
 
-	// SearchTimeline skips acc1; UserTweets still sees both.
+// TestPerOpLockingScopesToOp verifies a lock hides the account from that op only.
+func TestPerOpLockingScopesToOp(t *testing.T) {
+	s, id1 := twoAccountStore(t)
+	lockOp(t, s, id1, "SearchTimeline", time.Now().Add(time.Hour))
+
 	if got, _ := s.ListAvailableAccountsForOp("SearchTimeline"); len(got) != 1 || got[0].Label != "acc2" {
 		t.Errorf("SearchTimeline available = %v, want [acc2]", got)
 	}
 	if got, _ := s.ListAvailableAccountsForOp("UserTweets"); len(got) != 2 {
 		t.Errorf("UserTweets available = %d, want 2", len(got))
 	}
+}
 
-	// An expired lock frees the account for the op again.
-	if err := s.LockAccountOp(id1, "SearchTimeline", time.Now().Add(-time.Minute)); err != nil {
-		t.Fatalf("relock: %v", err)
-	}
+// TestPerOpLockingExpires verifies an expired lock frees the account again.
+func TestPerOpLockingExpires(t *testing.T) {
+	s, id1 := twoAccountStore(t)
+	lockOp(t, s, id1, "SearchTimeline", time.Now().Add(-time.Minute))
+
 	if got, _ := s.ListAvailableAccountsForOp("SearchTimeline"); len(got) != 2 {
 		t.Errorf("after expiry SearchTimeline available = %d, want 2", len(got))
 	}
+}
 
-	// Deleting an account removes its locks.
-	if err := s.LockAccountOp(id1, "SearchTimeline", time.Now().Add(time.Hour)); err != nil {
-		t.Fatalf("relock2: %v", err)
-	}
+// TestPerOpLockingClearedOnDelete verifies deleting an account drops its locks.
+func TestPerOpLockingClearedOnDelete(t *testing.T) {
+	s, id1 := twoAccountStore(t)
+	lockOp(t, s, id1, "SearchTimeline", time.Now().Add(time.Hour))
+
 	if err := s.DeleteAccount(id1); err != nil {
 		t.Fatalf("delete: %v", err)
 	}

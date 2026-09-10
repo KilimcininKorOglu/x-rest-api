@@ -20,30 +20,20 @@ func TestParseAccountAnalytics(t *testing.T) {
 	if a == nil {
 		t.Fatal("parseAccountAnalytics returned nil")
 	}
-	if a.Followers != 1000 {
-		t.Errorf("Followers = %d, want 1000", a.Followers)
-	}
-	if a.VerifiedFollowers != 42 {
-		t.Errorf("VerifiedFollowers = %d, want 42", a.VerifiedFollowers)
-	}
-	if a.ActiveFollowers != 100 || a.ActiveVerifiedFollowers != 20 {
-		t.Errorf("active = %d/%d, want 100/20", a.ActiveFollowers, a.ActiveVerifiedFollowers)
-	}
-	if a.Current.Engagements["Fav"] != 23 {
-		t.Errorf("current Fav = %d, want 23", a.Current.Engagements["Fav"])
-	}
-	if a.Current.Engagements["Reply"] != 3 {
-		t.Errorf("current Reply = %d, want 3", a.Current.Engagements["Reply"])
-	}
-	if a.Current.Follows != 5 || a.Current.Unfollows != 1 {
-		t.Errorf("current follows = %d/%d, want 5/1", a.Current.Follows, a.Current.Unfollows)
-	}
-	if a.Previous.Engagements["Fav"] != 120 || a.Previous.Engagements["Reply"] != 7 {
-		t.Errorf("previous engagements = %v", a.Previous.Engagements)
-	}
-	if a.Previous.Follows != 9 || a.Previous.Unfollows != 3 {
-		t.Errorf("previous follows = %d/%d, want 9/3", a.Previous.Follows, a.Previous.Unfollows)
-	}
+	checkFields(t, []fieldCheck{
+		{"Followers", a.Followers, 1000},
+		{"VerifiedFollowers", a.VerifiedFollowers, 42},
+		{"ActiveFollowers", a.ActiveFollowers, 100},
+		{"ActiveVerifiedFollowers", a.ActiveVerifiedFollowers, 20},
+		{"Current.Engagements[Fav]", a.Current.Engagements["Fav"], int64(23)},
+		{"Current.Engagements[Reply]", a.Current.Engagements["Reply"], int64(3)},
+		{"Current.Follows", a.Current.Follows, int64(5)},
+		{"Current.Unfollows", a.Current.Unfollows, int64(1)},
+		{"Previous.Engagements[Fav]", a.Previous.Engagements["Fav"], int64(120)},
+		{"Previous.Engagements[Reply]", a.Previous.Engagements["Reply"], int64(7)},
+		{"Previous.Follows", a.Previous.Follows, int64(9)},
+		{"Previous.Unfollows", a.Previous.Unfollows, int64(3)},
+	})
 }
 
 // TestAnalyticsVars verifies the previous window mirrors the current window's

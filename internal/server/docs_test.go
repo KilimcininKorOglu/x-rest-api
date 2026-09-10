@@ -26,6 +26,16 @@ func TestOpenAPISpec(t *testing.T) {
 		t.Fatalf("paths missing or empty")
 	}
 
+	if ops := assertOperations(t, paths); ops != len(routes) {
+		t.Errorf("operation count = %d, want %d", ops, len(routes))
+	}
+	assertComponents(t, doc)
+}
+
+// assertOperations checks that every operation is secured and data-wrapped, and
+// returns how many the document declares, which must equal the route count.
+func assertOperations(t *testing.T, paths map[string]any) int {
+	t.Helper()
 	ops := 0
 	for path, raw := range paths {
 		item := raw.(map[string]any)
@@ -38,10 +48,12 @@ func TestOpenAPISpec(t *testing.T) {
 			assertDataWrapped(t, method, path, op)
 		}
 	}
-	if ops != len(routes) {
-		t.Errorf("operation count = %d, want %d", ops, len(routes))
-	}
+	return ops
+}
 
+// assertComponents checks the shared schemas and the bearer security scheme.
+func assertComponents(t *testing.T, doc map[string]any) {
+	t.Helper()
 	comps := doc["components"].(map[string]any)
 	schemas := comps["schemas"].(map[string]any)
 	for _, name := range []string{"Tweet", "XUser", "TweetThread", "Error"} {

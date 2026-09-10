@@ -327,22 +327,38 @@ func classifyUpstream(up *xapi.UpstreamError, rl *xapi.RateLimit) upstreamKind {
 	switch {
 	case up.HTML:
 		return kindHTMLBlock
-	case up.Code == 32 || up.Code == 326:
-		return kindBan
-	case up.Code == 88 && rl != nil && rl.Remaining > 0:
-		return kindBan
-	case up.Status == 403 && up.Msg == "OK":
+	case isBanned(up, rl):
 		return kindBan
 	case up.Code == 336:
 		return kindFeaturesStale
 	case up.Code == -1:
 		return kindTransient
-	case up.Status == 429 || up.Code == 88 || (rl != nil && rl.Remaining == 0):
-		return kindRateLimit
-	case up.Status == 404:
+	case isRateLimited(up, rl):
 		return kindRateLimit
 	}
 	return kindOther
+}
+
+// isBanned reports whether the error means bad/expired cookies or denied access,
+// so the account must be disabled rather than merely cooled down. Code 88 counts
+// as a ban only while budget remains, because a real rate limit exhausts it.
+func isBanned(up *xapi.UpstreamError, rl *xapi.RateLimit) bool {
+	switch {
+	case up.Code == 32 || up.Code == 326:
+		return true
+	case up.Code == 88 && rl != nil && rl.Remaining > 0:
+		return true
+	case up.Status == 403 && up.Msg == "OK":
+		return true
+	}
+	return false
+}
+
+// isRateLimited reports whether the op should cool down for this account. A 404
+// counts, because x.com answers a throttled read that way.
+func isRateLimited(up *xapi.UpstreamError, rl *xapi.RateLimit) bool {
+	return up.Status == 429 || up.Status == 404 || up.Code == 88 ||
+		(rl != nil && rl.Remaining == 0)
 }
 
 // rlStatus normalises the status used for a per-op cooldown (429 or 404).

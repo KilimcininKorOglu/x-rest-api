@@ -290,12 +290,23 @@ func appendMinOps(parts []string, f SearchFilters, q string) []string {
 }
 
 func appendTimeGeo(parts []string, f SearchFilters, q string) []string {
+	return appendGeo(appendTimeRange(parts, f, q), f, q)
+}
+
+// appendTimeRange adds since:/until: unless q already carries that operator.
+func appendTimeRange(parts []string, f SearchFilters, q string) []string {
 	if f.Since != "" && !hasOperator(q, "since") {
 		parts = append(parts, "since:"+queryTimeToken(f.Since))
 	}
 	if f.Until != "" && !hasOperator(q, "until") {
 		parts = append(parts, "until:"+queryTimeToken(f.Until))
 	}
+	return parts
+}
+
+// appendGeo adds one geo operator. Any geo operator already in q wins, and the
+// structured fields are mutually exclusive, so only the first match is emitted.
+func appendGeo(parts []string, f SearchFilters, q string) []string {
 	geoTaken := hasOperator(q, "place") || hasOperator(q, "geocode") ||
 		hasOperator(q, "near") || hasOperator(q, "within")
 	if geoTaken {

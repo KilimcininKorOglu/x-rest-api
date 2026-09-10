@@ -320,6 +320,16 @@ func pickCount(legacy map[string]any, legacyKey string, node map[string]any, nod
 	return asInt(node[nodeKey])
 }
 
+// firstNonEmpty returns a when it is set, else b. The two GraphQL schema
+// generations carry the same field in different places, so a parser reads both
+// and keeps whichever answered.
+func firstNonEmpty(a, b string) string {
+	if a != "" {
+		return a
+	}
+	return b
+}
+
 // parseUserResult turns a user_results.result node into an XUser.
 func parseUserResult(result map[string]any) *XUser {
 	if result == nil {
@@ -327,28 +337,20 @@ func parseUserResult(result map[string]any) *XUser {
 	}
 	legacy := asMap(result["legacy"])
 	core := asMap(result["core"])
-	location := asString(dig(result, "location", "location"))
-	if location == "" {
-		location = asString(legacy["location"])
-	}
-	screenName := asString(legacy["screen_name"])
-	if screenName == "" {
-		screenName = asString(core["screen_name"])
-	}
-	name := asString(legacy["name"])
-	if name == "" {
-		name = asString(core["name"])
-	}
-	createdAt := asString(legacy["created_at"])
-	if createdAt == "" {
-		createdAt = asString(core["created_at"])
-	}
-	// The newer schema drops legacy and moves the bio into profile_bio.
+	// The newer schema drops legacy and moves the bio into profile_bio, the avatar
+	// into avatar and the location into its own object, so every field is read from
+	// whichever generation carries it.
 	bio := asMap(result["profile_bio"])
-	description := asString(legacy["description"])
-	if description == "" {
-		description = asString(bio["description"])
-	}
+	avatar := asMap(result["avatar"])
+
+	location := firstNonEmpty(asString(dig(result, "location", "location")), asString(legacy["location"]))
+	screenName := firstNonEmpty(asString(legacy["screen_name"]), asString(core["screen_name"]))
+	name := firstNonEmpty(asString(legacy["name"]), asString(core["name"]))
+	createdAt := firstNonEmpty(asString(legacy["created_at"]), asString(core["created_at"]))
+	description := firstNonEmpty(asString(legacy["description"]), asString(bio["description"]))
+	profileImage := firstNonEmpty(asString(legacy["profile_image_url_https"]), asString(avatar["image_url"]))
+	blueType := firstNonEmpty(asString(result["verified_type"]), asString(legacy["verified_type"]))
+
 	descEntities := asMap(dig(legacy, "entities", "description"))
 	if len(descEntities) == 0 {
 		descEntities = asMap(dig(bio, "entities", "description"))
@@ -356,15 +358,6 @@ func parseUserResult(result map[string]any) *XUser {
 	verified, _ := legacy["verified"].(bool)
 	blue, _ := result["is_blue_verified"].(bool)
 	protected, _ := legacy["protected"].(bool)
-	avatar := asMap(result["avatar"])
-	profileImage := asString(legacy["profile_image_url_https"])
-	if profileImage == "" {
-		profileImage = asString(avatar["image_url"])
-	}
-	blueType := asString(result["verified_type"])
-	if blueType == "" {
-		blueType = asString(legacy["verified_type"])
-	}
 	// followers/following live in relationship_counts and tweet/media counts in
 	// tweet_counts on the newer schema, where legacy is empty.
 	rc := asMap(result["relationship_counts"])
