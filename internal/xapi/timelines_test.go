@@ -266,7 +266,9 @@ func TestParseRichTweetMedia(t *testing.T) {
 	}
 	checkFields(t, []fieldCheck{
 		{"Videos[0].DurationMS", tw.Media.Videos[0].DurationMS, 5000},
+		// Every variant stays in the list; URL is the convenience pick from it.
 		{"len(Videos[0].Variants)", len(tw.Media.Videos[0].Variants), 2},
+		{"Videos[0].URL", tw.Media.Videos[0].URL, "https://v/hi.mp4"},
 	})
 }
 

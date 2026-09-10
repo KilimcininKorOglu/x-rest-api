@@ -108,7 +108,31 @@ func mediaVideo(mm map[string]any) MediaVideo {
 			URL:         asString(vm["url"]),
 		})
 	}
+	v.URL = bestVideoURL(v.Variants)
 	return v
+}
+
+// bestVideoURL picks the variant a client should play by default: the
+// highest-bitrate progressive mp4, else the first variant that carries a url,
+// which is the HLS playlist when x.com offers no mp4. Bitrate alone cannot rank
+// the two kinds against each other, because x.com sends the playlist without one.
+func bestVideoURL(vs []MediaVariant) string {
+	best, bestRate, fallback := "", -1, ""
+	for _, v := range vs {
+		if v.URL == "" {
+			continue
+		}
+		if fallback == "" {
+			fallback = v.URL
+		}
+		if v.ContentType == "video/mp4" && v.Bitrate > bestRate {
+			bestRate, best = v.Bitrate, v.URL
+		}
+	}
+	if best != "" {
+		return best
+	}
+	return fallback
 }
 
 // parseCommunityNote reads the birdwatch_pivot community note text attached to a

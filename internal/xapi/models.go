@@ -103,9 +103,13 @@ type MediaPhoto struct {
 }
 
 // MediaVideo is one video with its best-bitrate variant list.
+// MediaVideo is one video attached to a tweet. Variants carries every rendition
+// x.com offers; URL is a convenience pick from that list, so a client that does
+// not want to rank variants itself can play it directly.
 type MediaVideo struct {
 	ThumbnailURL string         `json:"thumbnail_url,omitempty"`
 	DurationMS   int            `json:"duration_ms,omitempty"`
+	URL          string         `json:"url,omitempty"`
 	Variants     []MediaVariant `json:"variants,omitempty"`
 }
 
