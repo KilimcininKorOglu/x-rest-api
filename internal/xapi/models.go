@@ -2,7 +2,6 @@ package xapi
 
 import "fmt"
 
-// XUser is a flat profile record. Callers (a monitor, a CSV export, a DB row)
 // UserIdentity is the minimal id<->username mapping for a user, without the rest
 // of the profile.
 type UserIdentity struct {
@@ -10,6 +9,7 @@ type UserIdentity struct {
 	Username string `json:"username"` // screen_name
 }
 
+// XUser is a flat profile record. Callers (a monitor, a CSV export, a DB row)
 // do not have to know about x.com's nested GraphQL shapes.
 type XUser struct {
 	RestID           string     `json:"rest_id"` // numeric user id (stable key; screen_names change)
@@ -103,7 +103,6 @@ type MediaPhoto struct {
 	URL string `json:"url"`
 }
 
-// MediaVideo is one video with its best-bitrate variant list.
 // MediaVideo is one video attached to a tweet. Variants carries every rendition
 // x.com offers; URL is a convenience pick from that list, so a client that does
 // not want to rank variants itself can play it directly.
@@ -340,6 +339,34 @@ type Broadcast struct {
 	ReplayStart        int64  `json:"replay_start,omitempty"`
 	AvailableForReplay bool   `json:"available_for_replay,omitempty"`
 	Broadcaster        *XUser `json:"broadcaster,omitempty"`
+}
+
+// CommunityNoteEntry is one community note written on a tweet
+// (BirdwatchFetchNotes). Tweet.CommunityNote holds only the note x.com already
+// displays; this carries the proposed ones too, each with its rating status.
+type CommunityNoteEntry struct {
+	RestID             string     `json:"rest_id"`
+	Text               string     `json:"text,omitempty"`
+	Classification     string     `json:"classification,omitempty"` // MisinformedOrPotentiallyMisleading | NotMisleading
+	Tags               []string   `json:"tags,omitempty"`           // misleading_tags or not_misleading_tags
+	RatingStatus       string     `json:"rating_status,omitempty"`  // e.g. NeedsMoreRatings
+	DecidedBy          string     `json:"decided_by,omitempty"`     // the scoring model that decided it
+	TrustworthySources bool       `json:"trustworthy_sources,omitempty"`
+	IsMediaNote        bool       `json:"is_media_note,omitempty"`
+	Language           string     `json:"language,omitempty"`
+	CreatedAt          int64      `json:"created_at,omitempty"`   // ms epoch
+	AuthorAlias        string     `json:"author_alias,omitempty"` // birdwatch aliases are pseudonymous
+	Sources            []TextLink `json:"sources,omitempty"`      // links cited in the note text
+}
+
+// CommunityNotes is every note BirdwatchFetchNotes returns for one tweet, split
+// the way x.com groups them: by whether the note's author judged the tweet
+// misleading.
+type CommunityNotes struct {
+	TweetID       string               `json:"tweet_id"`
+	Misleading    []CommunityNoteEntry `json:"misleading,omitempty"`
+	NotMisleading []CommunityNoteEntry `json:"not_misleading,omitempty"`
+	CanWriteNote  bool                 `json:"can_write_note"`
 }
 
 // Article is one long-form Article (X Articles). Text is the plain-text body

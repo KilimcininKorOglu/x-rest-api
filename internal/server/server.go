@@ -215,6 +215,7 @@ func (s *Server) v1Routes() []apiRoute {
 		with(route("GET", "/v1/tweets/{id}/replies", "Direct replies to a tweet", tweets, sortParams), s.tweetReplies),
 		list("/v1/tweets/{id}/quotes", "Tweets quoting a tweet", s.tweetQuotes),
 		list("/v1/tweets/{id}/hidden", "Hidden replies under a tweet", s.hiddenReplies),
+		with(route("GET", "/v1/tweets/{id}/notes", "Community notes on a tweet, including proposals", xapi.CommunityNotes{}, rawOnlyParams), s.tweetNotes),
 		with(route("GET", "/v1/tweets/{id}/history", "A tweet's edit history (raw)", map[string]any{}, rawOnlyParams), s.tweetHistory),
 		usersList("/v1/tweets/{id}/retweeters", "Users who reposted a tweet", s.getRetweeters),
 		usersList("/v1/tweets/{id}/likers", "Users who liked a tweet", s.getLikers),

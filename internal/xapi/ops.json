@@ -185,6 +185,7 @@
 			"withCommunity": true,
 			"withQuickPromoteEligibilityTweetFields": true,
 			"withBirdwatchNotes": true,
+			"includeHasBirdwatchNotes": true,
 			"withVoice": true
 		},
 		"features": {
@@ -565,6 +566,7 @@
 			"tweetId": "2073831358678315489",
 			"includePromotedContent": true,
 			"withBirdwatchNotes": true,
+			"includeHasBirdwatchNotes": true,
 			"withVoice": true,
 			"withCommunity": true
 		},
@@ -2627,6 +2629,28 @@
 			"responsive_web_grok_community_note_auto_translation_is_enabled": true,
 			"responsive_web_enhance_cards_enabled": false,
 			"rweb_conversational_replies_downvote_enabled": false
+		}
+	},
+	"BirdwatchFetchNotes": {
+		"queryId": "gIsAL0K8Ceo7h4lY149Eog",
+		"method": "GET",
+		"variables": {
+			"tweet_id": ""
+		},
+		"features": {
+			"responsive_web_birdwatch_live_note_enabled": true,
+			"responsive_web_birdwatch_enforce_author_user_quotas": true,
+			"responsive_web_birdwatch_media_notes_enabled": true,
+			"responsive_web_birdwatch_url_notes_enabled": false,
+			"responsive_web_grok_community_note_translation_is_enabled": true,
+			"responsive_web_birdwatch_fast_notes_badge_enabled": false,
+			"responsive_web_birdwatch_note_internal_insights_enabled": false,
+			"responsive_web_grok_community_note_auto_translation_is_enabled": true,
+			"responsive_web_graphql_timeline_navigation_enabled": true,
+			"profile_label_improvements_pcf_label_in_post_enabled": true,
+			"responsive_web_profile_redirect_enabled": true,
+			"rweb_tipjar_consumption_enabled": false,
+			"verified_phone_label_enabled": false
 		}
 	}
 }

@@ -102,6 +102,7 @@ failure is `{"error": {"message": ...}}`. Every `/v1` route needs the Bearer key
 | `/v1/tweets/{id}/likers`                     | who liked                                                                         |
 | `/v1/tweets/{id}/quotes`                     | tweets quoting a tweet                                                            |
 | `/v1/tweets/{id}/hidden`                     | hidden replies under a tweet                                                      |
+| `/v1/tweets/{id}/notes`                      | community notes on a tweet, including proposals awaiting ratings                   |
 | `/v1/tweets/by?ids=`                         | batch tweet lookup (comma-separated numeric ids, max 100)                         |
 | `/v1/search?q=&product=Latest`               | keyword/filter search (tweets)                                                    |
 | `/v1/search/people?q=`                       | keyword/filter search (users)                                                     |

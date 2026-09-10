@@ -1055,6 +1055,20 @@ func (s *Server) spaceStream(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// tweetNotes returns every community note written on a tweet, including the
+// proposals x.com has not displayed. A tweet's own community_note field carries
+// only the displayed one.
+func (s *Server) tweetNotes(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	s.serveRead(w, r, false, "BirdwatchFetchNotes", func(c *xapi.XClient) (any, string, error) {
+		if rawParam(r) {
+			return rawByVars(c, "BirdwatchFetchNotes", map[string]any{"tweet_id": id}, "", 0)
+		}
+		n, err := c.TweetNotes(id)
+		return n, "", err
+	})
+}
+
 // broadcastInfo returns a live video Broadcast's metadata. Broadcasts are a
 // separate surface from audio Spaces, so the {id} is a Broadcast id.
 func (s *Server) broadcastInfo(w http.ResponseWriter, r *http.Request) {
