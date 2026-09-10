@@ -150,7 +150,8 @@ instead of the flat model, and `?format=csv` to return CSV instead of JSON (the
 next cursor then comes back in the `X-Next-Cursor` header). Parsed tweets/users
 include media (every video variant, plus a `url` picking the best one), entities
 (hashtags/cashtags/mentions/links), nested quote/retweet, cards/polls,
-conversation/reply ids, and richer profile fields. Endpoints marked "raw GQL" have
+conversation/reply ids, an `is_ai` flag when x.com labels the media as
+AI-generated, and richer profile fields. Endpoints marked "raw GQL" have
 no flat model and always return the raw response.
 
 Any endpoint that takes a `{handle}` also accepts a numeric id, an `@handle`, or a

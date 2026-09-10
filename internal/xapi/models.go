@@ -53,6 +53,7 @@ type Tweet struct {
 	BookmarkCount       int          `json:"bookmark_count,omitempty"`
 	IsRetweet           bool         `json:"is_retweet"`
 	IsQuote             bool         `json:"is_quote"`
+	IsAI                bool         `json:"is_ai,omitempty"` // x.com labels the media as AI-generated
 	ConversationID      string       `json:"conversation_id,omitempty"`
 	InReplyToTweetID    string       `json:"in_reply_to_tweet_id,omitempty"`
 	InReplyToUserID     string       `json:"in_reply_to_user_id,omitempty"`

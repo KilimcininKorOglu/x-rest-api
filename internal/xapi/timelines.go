@@ -275,6 +275,7 @@ func parseTweetDepth(result map[string]any, depth int) *Tweet {
 		BookmarkCount:       asInt(legacy["bookmark_count"]),
 		IsRetweet:           isRetweet,
 		IsQuote:             quote,
+		IsAI:                parseAIGenerated(t, legacy),
 		ConversationID:      asString(legacy["conversation_id_str"]),
 		InReplyToTweetID:    asString(legacy["in_reply_to_status_id_str"]),
 		InReplyToUserID:     asString(legacy["in_reply_to_user_id_str"]),
@@ -298,6 +299,24 @@ func parseTweetDepth(result map[string]any, depth int) *Tweet {
 		tw.Retweeted = parseTweetDepth(nestedResult(t, legacy, "retweeted_status_result"), depth+1)
 	}
 	return tw
+}
+
+// parseAIGenerated reports whether x.com labels the tweet's media as AI-generated.
+// It reads the disclosure block first, then falls back to a grok_post_id, which
+// x.com sets on media a user created with Grok. Both entity blocks are checked,
+// because x.com repeats the same media under entities and extended_entities.
+func parseAIGenerated(t, legacy map[string]any) bool {
+	if asBool(dig(t, "content_disclosure", "ai_generated_disclosure", "has_ai_generated_media")) {
+		return true
+	}
+	for _, block := range []string{"entities", "extended_entities"} {
+		for _, it := range asSlice(dig(legacy, block, "media")) {
+			if asString(asMap(it)["grok_post_id"]) != "" {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // nestedResult finds a quoted/retweeted status result, checking both the tweet
