@@ -320,7 +320,10 @@ curl -H "Authorization: Bearer $KEY" \
 
 - **Dashboard** — account/key/request counts and recent requests.
 - **Accounts** — add/enable/disable/delete accounts; shows status and active
-  per-op locks (which operations each account is cooling down on).
+  per-op locks (which operations each account is cooling down on). **Test** runs
+  one account-scoped read and reports the handle the cookies identify, so a dead
+  cookie surfaces before a user request hits it. A real auth failure disables the
+  account; a transient error or a rate limit leaves it enabled.
 - **API Keys** — create (shown once, viewable later), toggle, delete; set write
   permission and bound account.
 - **Logs** — every `/v1` request (method, path, status, upstream status, latency,

@@ -30,6 +30,7 @@
         </td>
         <td class="mono">{{tsp .LastUsedAt}}</td>
         <td class="actions">
+          <form method="post" action="/admin/accounts/{{.ID}}/test"><button class="ghost" type="submit">Test</button></form>
           <form method="post" action="/admin/accounts/{{.ID}}/toggle"><button class="ghost" type="submit">{{if .Enabled}}Disable{{else}}Enable{{end}}</button></form>
           <form method="post" action="/admin/accounts/{{.ID}}/delete" onsubmit="return confirm('Delete account {{.Label}}?')"><button class="danger" type="submit">Delete</button></form>
         </td>

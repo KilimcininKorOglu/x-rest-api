@@ -84,6 +84,26 @@ func (h *Handler) accountToggle(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/admin/accounts", http.StatusFound)
 }
 
+// accountTest runs the on-demand cookie check and reports what it found. A real
+// auth failure disables the account, so the flash says so explicitly.
+func (h *Handler) accountTest(w http.ResponseWriter, r *http.Request) {
+	if h.probe == nil {
+		setFlash(w, r, "err", "the account test is not available")
+		http.Redirect(w, r, "/admin/accounts", http.StatusFound)
+		return
+	}
+	handle, disabled, err := h.probe(pathID(r))
+	switch {
+	case err != nil && disabled:
+		setFlash(w, r, "err", "account disabled: "+err.Error())
+	case err != nil:
+		setFlash(w, r, "err", "test failed (account left enabled): "+err.Error())
+	default:
+		setFlash(w, r, "ok", "cookies valid, signed in as @"+handle)
+	}
+	http.Redirect(w, r, "/admin/accounts", http.StatusFound)
+}
+
 func (h *Handler) accountDelete(w http.ResponseWriter, r *http.Request) {
 	flashErr(w, r, h.st.DeleteAccount(pathID(r)), "account deleted")
 	http.Redirect(w, r, "/admin/accounts", http.StatusFound)

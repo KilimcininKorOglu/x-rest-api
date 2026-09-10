@@ -46,9 +46,11 @@ func run() error {
 	}
 
 	refresh := refreshQueryIDs(st, sess)
-	adminH := admin.New(st, refresh)
 	srv := server.NewServer(st, sess)
 	srv.SetRefresh(refresh) // auto-refresh queryIds when x.com reports code 336
+	// The admin panel is built after the server, because its account test runs
+	// through the server's session and rotation pool.
+	adminH := admin.New(st, refresh, srv.ProbeAccount)
 	httpSrv := &http.Server{
 		Addr:              cfg.Addr,
 		Handler:           srv.Routes(adminH.Router()),

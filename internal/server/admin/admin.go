@@ -25,11 +25,15 @@ const (
 type Handler struct {
 	st      *store.Store
 	refresh func() (int, error) // refresh queryIds from the x.com bundle; returns count found
+	// probe checks one account's cookies on demand. It returns the handle the
+	// cookies identify and whether the check disabled the account.
+	probe func(id int64) (string, bool, error)
 }
 
-// New builds the admin handler. refresh triggers a live queryId refresh.
-func New(st *store.Store, refresh func() (int, error)) *Handler {
-	return &Handler{st: st, refresh: refresh}
+// New builds the admin handler. refresh triggers a live queryId refresh, and
+// probe runs an on-demand account health check.
+func New(st *store.Store, refresh func() (int, error), probe func(int64) (string, bool, error)) *Handler {
+	return &Handler{st: st, refresh: refresh, probe: probe}
 }
 
 // Router returns the /admin subtree (mounted under /admin by the parent).
@@ -51,6 +55,7 @@ func (h *Handler) Router() http.Handler {
 		pr.Get("/accounts", h.accountsPage)
 		pr.Post("/accounts", h.accountCreate)
 		pr.Post("/accounts/{id}/toggle", h.accountToggle)
+		pr.Post("/accounts/{id}/test", h.accountTest)
 		pr.Post("/accounts/{id}/delete", h.accountDelete)
 		pr.Get("/keys", h.keysPage)
 		pr.Post("/keys", h.keyCreate)
