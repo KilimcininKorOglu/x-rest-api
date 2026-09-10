@@ -4,6 +4,24 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-09-10
+
+### Added
+- Community notes proposed on a tweet are exposed on the tweet model
+- Tweets whose media x.com labels AI-generated now carry that flag
+- A ready-to-play url sits beside the video variant list
+- On-demand cookie check for an account from the admin panel
+- Credential-free tiers allow reads without a configured account
+- Broadcast and community media/hashtag read endpoints
+
+### Changed
+- The builder image is pinned to the exact `go.mod` floor
+- Every function is brought under the cyclomatic complexity limit
+- Docker compose stack ships with a containerised test service
+- README documents the `/2` layer and the new `/v1` endpoints
+- MIT LICENSE file added to the repository
+- Tests prove every url the parsers emit is absolute
+
 ## [1.1.0] - 2026-09-03
 
 ### Added
