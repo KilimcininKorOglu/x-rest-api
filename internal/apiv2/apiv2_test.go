@@ -101,6 +101,21 @@ func TestTweetObjectPaidPartnership(t *testing.T) {
 	}
 }
 
+func TestTweetObjectIsAI(t *testing.T) {
+	tw := xapi.Tweet{RestID: "1", Text: "x", IsAI: true}
+	obj := TweetObject(tw, parseFrom(t, "tweet.fields=is_ai"))
+	if obj["is_ai"] != true {
+		t.Errorf("is_ai not emitted when selected: %v", obj)
+	}
+	if _, ok := TweetObject(tw, parseFrom(t, ""))["is_ai"]; ok {
+		t.Error("is_ai emitted without being selected")
+	}
+	plain := xapi.Tweet{RestID: "1", Text: "x"}
+	if _, ok := TweetObject(plain, parseFrom(t, "tweet.fields=is_ai"))["is_ai"]; ok {
+		t.Error("is_ai emitted on a tweet without the label")
+	}
+}
+
 func TestTweetObjectUnknownFieldIgnored(t *testing.T) {
 	tw := xapi.Tweet{RestID: "1", Text: "x"}
 	obj := TweetObject(tw, parseFrom(t, "tweet.fields=possibly_sensitive,context_annotations"))

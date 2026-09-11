@@ -31,8 +31,9 @@ func mustMarshalV2() []byte {
 // every v2 operation.
 func v2FieldParams() []any {
 	names := []string{"tweet.fields", "user.fields", "media.fields", "poll.fields", "place.fields", "expansions"}
-	// is_paid_partnership is an extension of ours; it has no X API v2 counterpart.
-	extra := map[string]string{"tweet.fields": " Extension: is_paid_partnership."}
+	// is_ai and is_paid_partnership are extensions of ours; neither has an X API v2
+	// counterpart.
+	extra := map[string]string{"tweet.fields": " Extensions: is_ai, is_paid_partnership."}
 	out := make([]any, 0, len(names))
 	for _, n := range names {
 		out = append(out, map[string]any{

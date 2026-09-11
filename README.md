@@ -253,8 +253,9 @@ not mirrored to `/2`.
 `media.fields`, `poll.fields`, `place.fields`, `list.fields`, `space.fields`
 (comma-separated), and `expansions` to pull related objects into `includes`. Each
 `*.fields` set is added to the v2 default set. Fields with no source in the
-upstream payload are omitted (the parameter is still accepted). One extension is
-accepted beyond the X v2 set: `tweet.fields=is_paid_partnership` emits
+upstream payload are omitted (the parameter is still accepted). Two extensions are
+accepted beyond the X v2 set: `tweet.fields=is_ai` emits `is_ai: true` on a tweet
+whose media x.com labels AI-generated, and `tweet.fields=is_paid_partnership` emits
 `is_paid_partnership: true` on a tweet x.com labels "Paid partnership". Timelines use the
 v2 paging params `max_results` and `pagination_token`, and return
 `meta.result_count` / `meta.next_token`.

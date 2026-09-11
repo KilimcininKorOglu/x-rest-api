@@ -25,7 +25,7 @@ func TweetObject(t xapi.Tweet, sel Selection) map[string]any {
 }
 
 // setTweetScalars fills the flat string fields plus created_at (ISO 8601) and the
-// is_paid_partnership flag. is_paid_partnership is not an X API v2 field; it is
+// is_ai / is_paid_partnership flags. Neither flag is an X API v2 field; each is
 // emitted only when tweet.fields asks for it, and only when the label is present.
 func setTweetScalars(out map[string]any, t xapi.Tweet, f map[string]bool) {
 	setStr(out, f, "author_id", t.AuthorID)
@@ -33,6 +33,9 @@ func setTweetScalars(out map[string]any, t xapi.Tweet, f map[string]bool) {
 	setStr(out, f, "in_reply_to_user_id", t.InReplyToUserID)
 	setStr(out, f, "lang", t.Lang)
 	setStr(out, f, "source", t.Source)
+	if t.IsAI {
+		set(out, f, "is_ai", true)
+	}
 	if t.IsPaidPartnership {
 		set(out, f, "is_paid_partnership", true)
 	}
