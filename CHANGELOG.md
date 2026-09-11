@@ -4,6 +4,23 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.2] - 2026-09-11
+
+### Added
+- SVG site icon served at `/favicon.svg`, reused as the logo on the sign-in and setup cards
+- ETag revalidation with 304 Not Modified for the embedded assets, the OpenAPI specs and the docs shell
+- Cache-Control on every route: `public, max-age` for assets and specs, `no-store` for the panel, `/v1`, `/2` and `/health`
+- Content-hashed asset URLs, so a rebuilt stylesheet or script reaches the browser without a manual refresh
+- Numbered pagination on the request log, with the record range, the filtered total and a page-size selector
+- An account is stored under the x.com handle its cookies report, read at creation and refreshed by the account test
+
+### Changed
+- A GET route now answers HEAD as well; an unregistered HEAD previously returned 405
+- The add-account form takes only the cookies, because the label comes from the handle
+
+### Fixed
+- The log and key tables no longer overflow their card; long paths, errors and keys wrap inside their cell
+
 ## [1.1.1] - 2026-09-10
 
 ### Added
