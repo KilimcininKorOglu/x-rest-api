@@ -395,6 +395,9 @@ func (s *Server) Routes(admin http.Handler) http.Handler {
 	get("/openapi.json", httpcache.Bytes(s.spec, jsonContentType, httpcache.ShortLived))
 	get("/openapi-v2.json", httpcache.Bytes(v2SpecJSON, jsonContentType, httpcache.ShortLived))
 	get("/docs", httpcache.Bytes(docsShell(), "text/html; charset=utf-8", httpcache.ShortLived))
+	// The icon sits at the root, so the panel, the docs and a bare tab request
+	// all resolve the same file.
+	get("/favicon.svg", httpcache.Bytes(faviconSVG, "image/svg+xml", httpcache.Asset))
 	r.Handle("/docs-static/*", http.StripPrefix("/docs-static/", docsStatic()))
 	// The target depends on the session, so the redirect must not be cached.
 	get("/", noStore(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

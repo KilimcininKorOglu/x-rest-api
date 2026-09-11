@@ -117,6 +117,8 @@ button.ghost { background: var(--surface-2); color: var(--text); border: 1px sol
 .muted { color: var(--muted); }
 .center { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
 .auth-card { width: 360px; }
+.auth-card h1 { text-align: center; }
+.auth-logo { display: block; margin: 0 auto 4px; }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
 /* Tables that must not push past their card: fixed layout holds the column

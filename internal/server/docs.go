@@ -20,6 +20,12 @@ import (
 //go:embed static/swagger-ui-bundle.js static/swagger-ui.css
 var docsAssets embed.FS
 
+// faviconSVG is the site icon, served at /favicon.svg and reused as the sign-in
+// logo. It is a separate embed from docsAssets, so it stays out of /docs-static/.
+//
+//go:embed static/favicon.svg
+var faviconSVG []byte
+
 // jsonContentType is the content type of every JSON document served here.
 const jsonContentType = "application/json; charset=utf-8"
 
@@ -31,6 +37,7 @@ const docsHTMLFormat = `<!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>x-rest-api — API docs</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="stylesheet" href="%s">
 </head>
 <body>
