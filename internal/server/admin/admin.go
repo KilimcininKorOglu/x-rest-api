@@ -13,6 +13,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"golang.org/x/crypto/bcrypt"
 
+	"x-rest-api/internal/httpcache"
 	"x-rest-api/internal/store"
 )
 
@@ -45,35 +46,50 @@ func New(st *store.Store, refresh func() (int, error), probe func(int64) (string
 func (h *Handler) Router() http.Handler {
 	r := chi.NewRouter()
 
+	// The panel's own assets are cacheable; every page below is not, so the
+	// static route sits outside the no-store group.
 	sub, _ := fs.Sub(assets, "static")
-	r.Handle("/static/*", http.StripPrefix("/admin/static/", http.FileServer(http.FS(sub))))
+	r.Handle("/static/*", http.StripPrefix("/admin/static/", httpcache.FS(sub, httpcache.Asset)))
 
-	r.Get("/setup", h.setupForm)
-	r.Post("/setup", h.setupSubmit)
-	r.Get("/login", h.loginForm)
-	r.Post("/login", h.loginSubmit)
-	r.Get("/logout", h.logout)
+	r.Group(func(ar chi.Router) {
+		// Every panel response is operator data behind a session cookie, and a
+		// redirect here depends on the session, so none of it may be cached.
+		ar.Use(noStore)
 
-	r.Group(func(pr chi.Router) {
-		pr.Use(h.requireAuth)
-		pr.Get("/", h.dashboard)
-		pr.Get("/accounts", h.accountsPage)
-		pr.Post("/accounts", h.accountCreate)
-		pr.Post("/accounts/{id}/toggle", h.accountToggle)
-		pr.Post("/accounts/{id}/test", h.accountTest)
-		pr.Post("/accounts/{id}/delete", h.accountDelete)
-		pr.Get("/keys", h.keysPage)
-		pr.Post("/keys", h.keyCreate)
-		pr.Post("/keys/{id}/toggle", h.keyToggle)
-		pr.Post("/keys/{id}/delete", h.keyDelete)
-		pr.Get("/logs", h.logsPage)
-		pr.Get("/logs/table", h.logsTable)
-		pr.Get("/query-ids", h.queryIDsPage)
-		pr.Post("/query-ids/refresh", h.queryIDsRefresh)
-		pr.Get("/settings", h.settingsPage)
-		pr.Post("/settings", h.settingsSave)
+		getHead(ar, "/setup", h.setupForm)
+		ar.Post("/setup", h.setupSubmit)
+		getHead(ar, "/login", h.loginForm)
+		ar.Post("/login", h.loginSubmit)
+		getHead(ar, "/logout", h.logout)
+
+		ar.Group(func(pr chi.Router) {
+			pr.Use(h.requireAuth)
+			getHead(pr, "/", h.dashboard)
+			getHead(pr, "/accounts", h.accountsPage)
+			pr.Post("/accounts", h.accountCreate)
+			pr.Post("/accounts/{id}/toggle", h.accountToggle)
+			pr.Post("/accounts/{id}/test", h.accountTest)
+			pr.Post("/accounts/{id}/delete", h.accountDelete)
+			getHead(pr, "/keys", h.keysPage)
+			pr.Post("/keys", h.keyCreate)
+			pr.Post("/keys/{id}/toggle", h.keyToggle)
+			pr.Post("/keys/{id}/delete", h.keyDelete)
+			getHead(pr, "/logs", h.logsPage)
+			getHead(pr, "/logs/table", h.logsTable)
+			getHead(pr, "/query-ids", h.queryIDsPage)
+			pr.Post("/query-ids/refresh", h.queryIDsRefresh)
+			getHead(pr, "/settings", h.settingsPage)
+			pr.Post("/settings", h.settingsSave)
+		})
 	})
 	return r
+}
+
+// getHead registers one handler for GET and HEAD together, because chi answers
+// an unregistered HEAD with 405.
+func getHead(r chi.Router, pattern string, h http.HandlerFunc) {
+	r.Get(pattern, h)
+	r.Head(pattern, h)
 }
 
 // requireAuth gates the panel: no admin -> setup; not signed in -> login.

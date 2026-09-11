@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"x-rest-api/internal/httpcache"
 )
 
 //go:embed templates/layout.html templates/pages/*.html static/*
@@ -18,9 +20,20 @@ var funcMap = template.FuncMap{
 	"statusClass": statusClass,
 	"did":         derefID,
 	"deref":       derefInt,
+	"asset":       assetURL,
 	"plus":        func(a, b int) int { return a + b },
 	"minus":       func(a, b int) int { return a - b },
 }
+
+// assetURL returns a panel asset path carrying a content hash, so a browser
+// fetches the rebuilt file instead of replaying its cached copy.
+func assetURL(name string) string {
+	return httpcache.AssetURL(assets, "static/"+name, "/admin/static/"+name)
+}
+
+// noStore marks a response uncacheable. The panel serves operator data behind a
+// session cookie, so no cache may keep any of it.
+var noStore = httpcache.NoStoreMiddleware
 
 func fmtTime(t time.Time) string { return t.Local().Format("2006-01-02 15:04:05") }
 

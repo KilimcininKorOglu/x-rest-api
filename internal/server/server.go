@@ -9,6 +9,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
+	"x-rest-api/internal/httpcache"
 	"x-rest-api/internal/openapi"
 	"x-rest-api/internal/store"
 	"x-rest-api/internal/version"
@@ -384,18 +385,26 @@ func (s *Server) Routes(admin http.Handler) http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID, middleware.Logger, middleware.Recoverer)
 
-	r.Get("/health", s.health)
-	r.Get("/openapi.json", s.openapiJSON)
-	r.Get("/openapi-v2.json", s.openapiV2JSON)
-	r.Get("/docs", s.docsUI)
+	// Register GET and HEAD together: chi answers an unregistered HEAD with 405,
+	// which breaks a monitor or a proxy that probes with HEAD.
+	get := func(pattern string, h http.Handler) {
+		r.Method(http.MethodGet, pattern, h)
+		r.Method(http.MethodHead, pattern, h)
+	}
+	get("/health", noStore(http.HandlerFunc(s.health)))
+	get("/openapi.json", httpcache.Bytes(s.spec, jsonContentType, httpcache.ShortLived))
+	get("/openapi-v2.json", httpcache.Bytes(v2SpecJSON, jsonContentType, httpcache.ShortLived))
+	get("/docs", httpcache.Bytes(docsShell(), "text/html; charset=utf-8", httpcache.ShortLived))
 	r.Handle("/docs-static/*", http.StripPrefix("/docs-static/", docsStatic()))
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+	// The target depends on the session, so the redirect must not be cached.
+	get("/", noStore(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/admin", http.StatusFound)
-	})
+	})))
 
 	r.Mount("/admin", admin)
 
 	r.Route("/v1", func(v chi.Router) {
+		v.Use(noStore)
 		v.Use(s.requestLog)
 		v.Use(s.apiKeyAuth)
 		for _, rt := range routes {
@@ -406,6 +415,7 @@ func (s *Server) Routes(admin http.Handler) http.Handler {
 	// /2 mirrors the official X API v2 read surface behind the same Bearer auth
 	// and request logging, rendering the {data, includes, meta, errors} envelope.
 	r.Route("/2", func(v chi.Router) {
+		v.Use(noStore)
 		v.Use(s.requestLog)
 		v.Use(s.apiKeyAuth)
 		s.mountV2(v)
@@ -413,6 +423,11 @@ func (s *Server) Routes(admin http.Handler) http.Handler {
 	})
 	return r
 }
+
+// noStore marks a response uncacheable. Every /v1 and /2 response is live
+// upstream data served under a Bearer key, and /health reports the current
+// state, so no cache may keep any of them.
+var noStore = httpcache.NoStoreMiddleware
 
 func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok", "version": version.Version})

@@ -10,7 +10,6 @@ package server
 import (
 	"encoding/json"
 	"log"
-	"net/http"
 
 	"x-rest-api/internal/version"
 )
@@ -26,12 +25,6 @@ func mustMarshalV2() []byte {
 		return []byte(`{"openapi":"3.0.3","info":{"title":"x-rest-api v2","version":"` + version.Version + `"},"paths":{}}`)
 	}
 	return b
-}
-
-// openapiV2JSON serves the v2 OpenAPI document (no auth).
-func (s *Server) openapiV2JSON(w http.ResponseWriter, _ *http.Request) {
-	w.Header().Set("content-type", "application/json; charset=utf-8")
-	_, _ = w.Write(v2SpecJSON)
 }
 
 // v2FieldParams are the shared field-selection query parameters referenced by
