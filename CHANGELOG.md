@@ -4,6 +4,12 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.3] - 2026-09-12
+
+### Added
+- Tweets x.com labels "Paid partnership" carry an `is_paid_partnership` flag on `/v1`
+- `/2` accepts `tweet.fields=is_paid_partnership` as an extension of the X API v2 field set
+
 ## [1.1.2] - 2026-09-11
 
 ### Added
