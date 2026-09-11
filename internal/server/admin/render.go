@@ -18,6 +18,8 @@ var funcMap = template.FuncMap{
 	"statusClass": statusClass,
 	"did":         derefID,
 	"deref":       derefInt,
+	"plus":        func(a, b int) int { return a + b },
+	"minus":       func(a, b int) int { return a - b },
 }
 
 func fmtTime(t time.Time) string { return t.Local().Format("2006-01-02 15:04:05") }

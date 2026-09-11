@@ -72,6 +72,16 @@ func (s *Store) CountLogs() (int, error) {
 	return n, err
 }
 
+// CountLogsFiltered returns how many request logs match the filter. The logs
+// view needs the filtered total, because the page count follows the filter.
+func (s *Store) CountLogsFiltered(f LogFilter) (int, error) {
+	var n int
+	err := s.db.QueryRow(
+		`SELECT COUNT(*) FROM request_logs
+		 WHERE (? = '' OR path LIKE '%' || ? || '%')`, f.Path, f.Path).Scan(&n)
+	return n, err
+}
+
 // DeleteLogsOlderThan removes logs older than the given number of days. A value
 // of zero or less disables retention and deletes nothing.
 func (s *Store) DeleteLogsOlderThan(days int) (int64, error) {

@@ -117,4 +117,19 @@ button.ghost { background: var(--surface-2); color: var(--text); border: 1px sol
 .muted { color: var(--muted); }
 .center { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
 .auth-card { width: 360px; }
-.actions { display: flex; gap: 8px; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Tables that must not push past their card: fixed layout holds the column
+   widths, and .break wraps a long value instead of widening the column. */
+table.fixed { table-layout: fixed; }
+td.break, th.break { word-break: break-word; overflow-wrap: anywhere; }
+/* A nowrap cell must also clip, or in a fixed layout its text runs over the
+   next column instead of staying inside its own. */
+td.nowrap, th.nowrap { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.pager { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
+.pager .info { color: var(--muted); }
+.pager .pages { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin: 0 auto; }
+.pager .pages button { padding: 6px 11px; }
+.pager .pages button.current { background: var(--accent); color: #fff; cursor: default; opacity: 1; }
+.pager .gap { color: var(--muted); padding: 0 2px; }

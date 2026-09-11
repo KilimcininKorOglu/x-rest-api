@@ -2,9 +2,15 @@
 <h1>Request logs</h1>
 <div class="card">
   <form hx-get="/admin/logs/table" hx-target="#logtable" hx-swap="innerHTML"
-        hx-trigger="submit, keyup changed delay:400ms from:input[name=path]">
+        hx-trigger="submit, keyup changed delay:400ms from:input[name=path], change from:select[name=size]">
     <div class="row">
       <div><label>Path contains</label><input type="text" name="path" value="{{.Filter.Path}}" placeholder="/v1/users"></div>
+      <div><label>Page size</label>
+        <select name="size">
+          {{$size := .Filter.Size}}
+          {{range .PageSizes}}<option value="{{.}}"{{if eq . $size}} selected{{end}}>{{.}}</option>{{end}}
+        </select>
+      </div>
     </div>
   </form>
 </div>
@@ -12,7 +18,12 @@
 {{end}}
 
 {{define "logstable"}}
-<table>
+<table class="fixed">
+  <colgroup>
+    <col style="width:18%"><col style="width:6%"><col style="width:17%"><col style="width:5%">
+    <col style="width:7%"><col style="width:5%"><col style="width:9%"><col style="width:7%">
+    <col style="width:10%"><col style="width:16%">
+  </colgroup>
   <thead><tr>
     <th>Time</th><th>Method</th><th>Path</th><th>Status</th><th>Upstream</th>
     <th>ms</th><th>Account</th><th>Key</th><th>IP</th><th>Error</th>
@@ -20,28 +31,42 @@
   <tbody>
     {{range .Logs}}
     <tr>
-      <td class="mono">{{ts .TS}}</td>
+      <td class="mono nowrap">{{ts .TS}}</td>
       <td>{{.Method}}</td>
-      <td class="mono">{{.Path}}{{if .Query}}?{{.Query}}{{end}}</td>
+      <td class="mono break">{{.Path}}{{if .Query}}?{{.Query}}{{end}}</td>
       <td class="status-{{statusClass .Status}}">{{.Status}}</td>
       <td>{{if .UpstreamStatus}}{{deref .UpstreamStatus}}{{else}}-{{end}}</td>
       <td>{{.DurationMS}}</td>
-      <td>{{index $.AccountLabels (did .AccountID)}}</td>
-      <td>{{index $.KeyNames (did .APIKeyID)}}</td>
-      <td class="mono">{{.RemoteIP}}</td>
-      <td class="muted">{{.Error}}</td>
+      <td class="break">{{index $.AccountLabels (did .AccountID)}}</td>
+      <td class="break">{{index $.KeyNames (did .APIKeyID)}}</td>
+      <td class="mono break">{{.RemoteIP}}</td>
+      <td class="muted break">{{.Error}}</td>
     </tr>
     {{else}}
     <tr><td colspan="10" class="muted">No matching requests.</td></tr>
     {{end}}
   </tbody>
 </table>
-<div class="actions" style="margin-top:12px">
-  {{if gt .Filter.Offset 0}}
-  <button class="ghost" hx-get="/admin/logs/table?path={{.Filter.Path}}&offset={{.PrevOffset}}" hx-target="#logtable" hx-swap="innerHTML">Prev</button>
-  {{end}}
-  {{if .HasNext}}
-  <button class="ghost" hx-get="/admin/logs/table?path={{.Filter.Path}}&offset={{.NextOffset}}" hx-target="#logtable" hx-swap="innerHTML">Next</button>
-  {{end}}
+
+{{$path := .Filter.Path}}{{$size := .Filter.Size}}{{$page := .Page}}
+<div class="pager">
+  <span class="info">{{if .Total}}{{.From}}-{{.To}} / {{.Total}}{{else}}no records{{end}}</span>
+  <span class="pages">
+    {{if gt $page 1}}
+    <button class="ghost" hx-get="/admin/logs/table?path={{$path | urlquery}}&size={{$size}}&page={{minus $page 1}}"
+            hx-target="#logtable" hx-swap="innerHTML">&lsaquo; Prev</button>
+    {{end}}
+    {{range .Pages}}
+      {{if eq . 0}}<span class="gap">&hellip;</span>
+      {{else if eq . $page}}<button class="current" disabled>{{.}}</button>
+      {{else}}<button class="ghost" hx-get="/admin/logs/table?path={{$path | urlquery}}&size={{$size}}&page={{.}}"
+                      hx-target="#logtable" hx-swap="innerHTML">{{.}}</button>{{end}}
+    {{end}}
+    {{if lt $page .LastPage}}
+    <button class="ghost" hx-get="/admin/logs/table?path={{$path | urlquery}}&size={{$size}}&page={{plus $page 1}}"
+            hx-target="#logtable" hx-swap="innerHTML">Next &rsaquo;</button>
+    {{end}}
+  </span>
+  <span class="muted">page {{$page}} / {{.LastPage}}</span>
 </div>
 {{end}}

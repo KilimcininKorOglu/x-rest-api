@@ -13,6 +13,9 @@ import (
 
 const logsPageSize = 50
 
+// logPageSizes are the page sizes the logs view offers.
+var logPageSizes = []int{25, 50, 100, 200}
+
 // labelMaps returns id->label for accounts and id->name for keys, for log views.
 func (h *Handler) labelMaps() (map[int64]string, map[int64]string) {
 	accLabels := map[int64]string{}
@@ -194,24 +197,62 @@ func (h *Handler) logsTable(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) logData(r *http.Request) map[string]any {
-	path := r.URL.Query().Get("path")
-	offset := atoi(r.URL.Query().Get("offset"))
-	logs, _ := h.st.ListLogs(store.LogFilter{Path: path, Limit: logsPageSize + 1, Offset: offset})
-	hasNext := len(logs) > logsPageSize
-	if hasNext {
-		logs = logs[:logsPageSize]
-	}
+	q := r.URL.Query()
+	path := q.Get("path")
+	size := logPageSize(q.Get("size"))
+	total, _ := h.st.CountLogsFiltered(store.LogFilter{Path: path})
+	last := max(1, (total+size-1)/size)
+	page := min(max(1, atoi(q.Get("page"))), last)
+	offset := (page - 1) * size
+	logs, _ := h.st.ListLogs(store.LogFilter{Path: path, Limit: size, Offset: offset})
 	accLabels, keyNames := h.labelMaps()
+	from := 0
+	if total > 0 {
+		from = offset + 1
+	}
 	return map[string]any{
 		"Title": "Logs", "Active": "logs",
 		"Logs":          logs,
-		"Filter":        map[string]any{"Path": path, "Offset": offset},
+		"Filter":        map[string]any{"Path": path, "Size": size, "Page": page},
 		"AccountLabels": accLabels,
 		"KeyNames":      keyNames,
-		"HasNext":       hasNext,
-		"PrevOffset":    max(0, offset-logsPageSize),
-		"NextOffset":    offset + logsPageSize,
+		"Total":         total,
+		"Page":          page,
+		"LastPage":      last,
+		"PageSizes":     logPageSizes,
+		"Pages":         pageNumbers(page, last),
+		"From":          from,
+		"To":            offset + len(logs),
 	}
+}
+
+// logPageSize clamps a requested page size to the sizes the view offers, so a
+// hand-edited query string cannot ask for an unbounded page.
+func logPageSize(s string) int {
+	n := atoi(s)
+	for _, v := range logPageSizes {
+		if n == v {
+			return n
+		}
+	}
+	return logsPageSize
+}
+
+// pageNumbers returns the page numbers the pager shows, with 0 standing for a
+// gap. It keeps the first page, the last page and the pages around the current
+// one, so the pager stays short on a long log.
+func pageNumbers(cur, last int) []int {
+	var out []int
+	for p := 1; p <= last; p++ {
+		if p == 1 || p == last || (p >= cur-2 && p <= cur+2) {
+			out = append(out, p)
+			continue
+		}
+		if n := len(out); n > 0 && out[n-1] != 0 {
+			out = append(out, 0)
+		}
+	}
+	return out
 }
 
 // ---- query IDs -------------------------------------------------------------- //
