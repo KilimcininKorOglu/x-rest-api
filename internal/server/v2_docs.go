@@ -31,11 +31,13 @@ func mustMarshalV2() []byte {
 // every v2 operation.
 func v2FieldParams() []any {
 	names := []string{"tweet.fields", "user.fields", "media.fields", "poll.fields", "place.fields", "expansions"}
+	// is_paid_partnership is an extension of ours; it has no X API v2 counterpart.
+	extra := map[string]string{"tweet.fields": " Extension: is_paid_partnership."}
 	out := make([]any, 0, len(names))
 	for _, n := range names {
 		out = append(out, map[string]any{
 			"name": n, "in": "query", "required": false,
-			"description": "Comma-separated " + n + " selection, matching X API v2.",
+			"description": "Comma-separated " + n + " selection, matching X API v2." + extra[n],
 			"schema":      map[string]any{"type": "string"},
 		})
 	}

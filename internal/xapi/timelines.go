@@ -276,6 +276,7 @@ func parseTweetDepth(result map[string]any, depth int) *Tweet {
 		IsRetweet:           isRetweet,
 		IsQuote:             quote,
 		IsAI:                parseAIGenerated(t, legacy),
+		IsPaidPartnership:   asBool(dig(t, "content_disclosure", "advertising_disclosure", "is_paid_promotion")),
 		ConversationID:      asString(legacy["conversation_id_str"]),
 		InReplyToTweetID:    asString(legacy["in_reply_to_status_id_str"]),
 		InReplyToUserID:     asString(legacy["in_reply_to_user_id_str"]),
