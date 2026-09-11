@@ -1,8 +1,10 @@
 package admin
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 
@@ -58,21 +60,29 @@ func (h *Handler) accountsPage(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// accountCreate stores an account under the handle its cookies belong to. The
+// operator never types a label: x.com is asked who the cookies are, so the label
+// always names the real account.
 func (h *Handler) accountCreate(w http.ResponseWriter, r *http.Request) {
-	label := r.FormValue("label")
-	at := r.FormValue("auth_token")
-	ct0 := r.FormValue("ct0")
-	if label == "" || at == "" || ct0 == "" {
-		setFlash(w, r, "err", "label, auth_token and ct0 are required")
-		http.Redirect(w, r, "/admin/accounts", http.StatusFound)
-		return
+	at := strings.TrimSpace(r.FormValue("auth_token"))
+	ct0 := strings.TrimSpace(r.FormValue("ct0"))
+	handle, err := h.resolveHandle(at, ct0)
+	if err == nil {
+		_, err = h.st.CreateAccount(handle, at, ct0, r.FormValue("enabled") != "")
 	}
-	if _, err := h.st.CreateAccount(label, at, ct0, r.FormValue("enabled") != ""); err != nil {
-		setFlash(w, r, "err", err.Error())
-	} else {
-		setFlash(w, r, "ok", "account added")
-	}
+	flashErr(w, r, err, "account @"+handle+" added")
 	http.Redirect(w, r, "/admin/accounts", http.StatusFound)
+}
+
+// resolveHandle asks x.com which account a cookie pair belongs to.
+func (h *Handler) resolveHandle(authToken, ct0 string) (string, error) {
+	if authToken == "" || ct0 == "" {
+		return "", errors.New("auth_token and ct0 are required")
+	}
+	if h.verify == nil {
+		return "", errors.New("the cookie check is not available, so the handle cannot be read")
+	}
+	return h.verify(authToken, ct0)
 }
 
 func (h *Handler) accountToggle(w http.ResponseWriter, r *http.Request) {
@@ -92,16 +102,27 @@ func (h *Handler) accountTest(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/admin/accounts", http.StatusFound)
 		return
 	}
-	handle, disabled, err := h.probe(pathID(r))
+	id := pathID(r)
+	handle, disabled, err := h.probe(id)
 	switch {
 	case err != nil && disabled:
 		setFlash(w, r, "err", "account disabled: "+err.Error())
 	case err != nil:
 		setFlash(w, r, "err", "test failed (account left enabled): "+err.Error())
 	default:
-		setFlash(w, r, "ok", "cookies valid, signed in as @"+handle)
+		setFlash(w, r, "ok", h.syncLabel(id, handle))
 	}
 	http.Redirect(w, r, "/admin/accounts", http.StatusFound)
+}
+
+// syncLabel stores the handle the probe reported and returns the flash message.
+// The label tracks the handle, so an account renamed on x.com is picked up here.
+func (h *Handler) syncLabel(id int64, handle string) string {
+	msg := "cookies valid, signed in as @" + handle
+	if err := h.st.SetAccountLabel(id, handle); err != nil {
+		return msg + " (label unchanged: " + err.Error() + ")"
+	}
+	return msg
 }
 
 func (h *Handler) accountDelete(w http.ResponseWriter, r *http.Request) {

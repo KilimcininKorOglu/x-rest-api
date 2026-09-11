@@ -48,7 +48,9 @@ Then open `http://localhost:8430/admin`:
   **for that operation only** until its `x-rate-limit-reset` and skipped
   (failover). x.com rate-limits each GraphQL op separately, so an account cooling
   down on `search` still serves timelines. Active per-op locks show in `/admin`.
-- **`X-Account: <label>`** pins any read to one account instead of rotating.
+- **`X-Account: <label>`** pins any read to one account instead of rotating. The
+  label is the account's x.com handle without the `@`; `/admin` reads it from the
+  cookies when the account is added and refreshes it on every account test.
 - **`/v1/home` and `/v1/bookmarks`** are account-scoped (they read the logged-in
   account's own feed), so they need a specific account: send `X-Account` or bind
   the API key to an account.

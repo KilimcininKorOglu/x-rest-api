@@ -28,12 +28,17 @@ type Handler struct {
 	// probe checks one account's cookies on demand. It returns the handle the
 	// cookies identify and whether the check disabled the account.
 	probe func(id int64) (string, bool, error)
+	// verify resolves the handle a cookie pair belongs to before the account
+	// exists, because the handle is the label a new account is stored under.
+	verify func(authToken, ct0 string) (string, error)
 }
 
-// New builds the admin handler. refresh triggers a live queryId refresh, and
-// probe runs an on-demand account health check.
-func New(st *store.Store, refresh func() (int, error), probe func(int64) (string, bool, error)) *Handler {
-	return &Handler{st: st, refresh: refresh, probe: probe}
+// New builds the admin handler. refresh triggers a live queryId refresh, probe
+// runs an on-demand account health check, and verify reads the handle out of a
+// cookie pair the operator submitted.
+func New(st *store.Store, refresh func() (int, error), probe func(int64) (string, bool, error),
+	verify func(string, string) (string, error)) *Handler {
+	return &Handler{st: st, refresh: refresh, probe: probe, verify: verify}
 }
 
 // Router returns the /admin subtree (mounted under /admin by the parent).

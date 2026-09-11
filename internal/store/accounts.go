@@ -97,6 +97,13 @@ func (s *Store) UpdateAccount(id int64, label, authToken, ct0 string, enabled bo
 	return err
 }
 
+// SetAccountLabel renames one account. The label is the account's x.com handle,
+// refreshed from the cookies whenever they are verified.
+func (s *Store) SetAccountLabel(id int64, label string) error {
+	_, err := s.db.Exec(`UPDATE accounts SET label = ? WHERE id = ?`, label, id)
+	return err
+}
+
 // DeleteAccount removes an account and its per-op locks. The locks also cascade
 // via the foreign key, but the explicit delete keeps cleanup independent of the
 // foreign_keys pragma.
